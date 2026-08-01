@@ -1,0 +1,13 @@
+# 검증 도구가 만들어 내는 임시 산출물
+tools/*.ttf
+tools/*.bin
+tools/cells.json
+tools/*.png
+tools/*.pdf
+
+# 편집기 · OS
+.DS_Store
+Thumbs.db
+.vscode/
+node_modules/
+__pycache__/

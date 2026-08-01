@@ -1,0 +1,57 @@
+name: 검사 및 GitHub Pages 배포
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 엔진 검사
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install fonttools
+      - name: 폰트 생성 (합성 입력)
+        run: node tools/selftest.js tools/ci-out.ttf
+      - name: 생성된 .ttf 를 fontTools 로 검사
+        run: python tools/validate.py tools/ci-out.ttf
+
+  deploy:
+    name: Pages 배포
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 배포할 파일만 모으기
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp -r assets src _site/
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

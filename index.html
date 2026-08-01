@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>손글씨 폰트 만들기</title>
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>✍️</text></svg>">
+</head>
+<body>
+
+<header>
+  <h1>손글씨 폰트 만들기</h1>
+  <p>종이에 쓴 손글씨를 사진으로 찍어 올리면 윈도우에 설치할 수 있는 <code>.ttf</code> 폰트가 됩니다.
+     프로그램 설치도, 회원 가입도 필요 없습니다.</p>
+  <p class="privacy">🔒 사진은 이 브라우저 안에서만 처리됩니다. 서버로 올라가지 않습니다.</p>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="step">1</span> 양식을 인쇄합니다</h2>
+
+  <div class="row">
+    <label>
+      만들 글자 범위
+      <select id="scope">
+        <option value="latin">영문 · 숫자 · 기호 (94칸)</option>
+        <option value="full">영문 + 한글 전체 (180칸)</option>
+      </select>
+    </label>
+    <label>
+      폰트 이름 (영문)
+      <input id="familyName" type="text" placeholder="My Handwriting" spellcheck="false">
+    </label>
+    <label>
+      폰트 이름 (한글)
+      <input id="familyNameKo" type="text" placeholder="내손글씨">
+    </label>
+  </div>
+
+  <p class="note">인쇄할 종이: <b id="sheetCount">—</b></p>
+
+  <div class="actions">
+    <button id="pdfBtn" class="primary">PDF 내려받기</button>
+    <button id="pngBtn">PNG 로 내려받기</button>
+  </div>
+
+  <div class="template-wrap">
+    <div id="templatePreview" class="template-preview"></div>
+    <ul class="tips">
+      <li><b>A4 · 실제 크기(100%)</b> 로 인쇄하세요. ‘용지에 맞춤’ 을 끄면 됩니다.</li>
+      <li>연한 파란 글자를 따라 <b>검은 볼펜이나 사인펜</b>으로 크고 진하게 씁니다.</li>
+      <li>칸 밖으로 나가지 않게, 옆 칸과 겹치지 않게 씁니다.</li>
+      <li>한글 자모 칸은 <b>연한 파란 사각형을 꽉 채우도록</b> 쓰면 글자가 예쁘게 조합됩니다.</li>
+      <li>연필은 너무 흐려서 잘 인식되지 않습니다.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="step">2</span> 사진을 올립니다</h2>
+
+  <div id="dropZone" class="drop">
+    <div class="drop-icon">📷</div>
+    <div><b>사진을 여기에 끌어다 놓거나 눌러서 고르세요</b></div>
+    <div class="sub">여러 장을 한꺼번에 올려도 됩니다 · JPG 또는 PNG</div>
+    <input id="fileInput" type="file" accept="image/*" multiple hidden>
+  </div>
+
+  <ul class="tips">
+    <li>종이 <b>네 모서리의 검은 사각형</b>이 사진에 모두 보여야 합니다.</li>
+    <li>그림자가 지지 않게, 밝은 곳에서 위에서 내려다보며 찍으세요.</li>
+    <li>스캐너로 스캔하면 가장 정확합니다.</li>
+    <li>같은 쪽을 여러 번 찍어 올리면 더 잘 나온 쪽이 자동으로 선택됩니다.</li>
+    <li>아이폰이라면 <b>설정 → 카메라 → 포맷 → ‘높은 호환성’</b> 으로 두면 확실합니다.
+        (HEIC 사진은 브라우저가 열지 못합니다.)</li>
+  </ul>
+
+  <div id="pageStatus" class="page-status"></div>
+  <ul id="photoLog" class="photo-log"></ul>
+  <div class="actions">
+    <button id="resetBtn" class="ghost" disabled>올린 결과 지우기</button>
+  </div>
+</section>
+
+<section>
+  <h2><span class="step">3</span> 폰트를 만듭니다</h2>
+
+  <div class="actions">
+    <button id="buildBtn" class="primary big" disabled>먼저 사진을 올려 주세요</button>
+  </div>
+
+  <div id="progress" class="progress" hidden>
+    <div class="bar"><div id="progressBar"></div></div>
+    <div id="progressText" class="sub"></div>
+  </div>
+
+  <div id="result" class="result" hidden>
+    <div class="actions">
+      <button id="downloadBtn" class="primary big">폰트 내려받기</button>
+    </div>
+
+    <div class="preview-head">
+      <label>미리보기 글</label>
+      <input id="previewText" type="text" placeholder="아무 글이나 입력해 보세요">
+      <label>크기</label>
+      <input id="previewSize" type="range" min="16" max="96" value="40">
+    </div>
+    <div id="previewBox" class="preview"></div>
+
+    <div id="reportBox" class="report"></div>
+
+    <details id="installHelp" hidden>
+      <summary>윈도우에 설치하는 방법</summary>
+      <ol>
+        <li>내려받은 <code>.ttf</code> 파일을 <b>더블클릭</b> 합니다.</li>
+        <li>창 위쪽의 <b>[설치]</b> 버튼을 누릅니다.</li>
+        <li>한글·워드·파워포인트를 <b>껐다가 다시 켜면</b> 글꼴 목록에 나타납니다.</li>
+        <li>글꼴 이름은 위에서 정한 이름으로 찾으면 됩니다.</li>
+      </ol>
+      <p class="note">마음에 안 드는 글자가 있으면, 그 칸만 다시 써서 사진을 올린 뒤 폰트를 다시 만드세요.
+         같은 칸은 더 진하게 쓴 쪽이 선택됩니다.</p>
+    </details>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>모든 처리가 브라우저 안에서 이루어집니다 · 소스와 사용법은 저장소의 README 를 보세요.</p>
+</footer>
+
+<script src="src/hangul.js"></script>
+<script src="src/charset.js"></script>
+<script src="src/layout.js"></script>
+<script src="src/trace.js"></script>
+<script src="src/ttf.js"></script>
+<script src="src/fontbuild.js"></script>
+<script src="src/imageproc.js"></script>
+<script src="src/template.js"></script>
+<script src="src/pdf.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
