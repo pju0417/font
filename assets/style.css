@@ -89,6 +89,13 @@ button:disabled { opacity: .5; cursor: default; }
 .drop-icon { font-size: 34px; }
 .drop .sub { margin-top: 4px; }
 
+.callout {
+  margin-top: 16px; padding: 14px 16px; border-radius: 10px;
+  background: #eef4ff; border: 1px solid #c9dbfb; font-size: 14.5px; line-height: 1.6;
+}
+.callout b { color: var(--ink); }
+.callout .sub { display: block; margin-top: 6px; }
+
 .page-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .page-chip {
   padding: 5px 14px; border-radius: 999px; font-size: 14px;
@@ -165,6 +172,7 @@ footer { padding: 26px 20px 50px; color: var(--muted); font-size: 14px; text-ali
   .drop { background: #171b21; border-color: #333b46; }
   .drop:hover, .drop.over { background: #1c2431; }
   .privacy { background: #16302a; color: #6cd6a5; }
+  .callout { background: #172236; border-color: #2b3f5e; }
   .photo-log .log { background: #171b21; }
   .log.good { background: #13291f; }
   .log.bad { background: #2e1a17; }

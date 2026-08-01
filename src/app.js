@@ -54,7 +54,7 @@
     });
     els.dropZone.addEventListener('drop', function (e) {
       handleFiles(Array.prototype.slice.call(e.dataTransfer.files).filter(function (f) {
-        return /^image\//.test(f.type);
+        return /^image\//.test(f.type) || HF.pdfin.isPdf(f);
       }));
     });
 
@@ -124,18 +124,38 @@
       var file = files[i++];
       logPhoto(file.name, '읽는 중…', 'wait');
       setTimeout(function () {
-        HF.imageproc.loadFile(file).then(function (src) {
-          var res = HF.imageproc.processImage(src, { layouts: state.layouts });
-          applyResult(file.name, res);
-        }).catch(function (e) {
-          logPhoto(file.name, unreadableMessage(file), 'bad', true);
-          console.warn(file.name, e);
-        }).then(function () {
-          updatePageStatus();
-          next();
-        });
+        (HF.pdfin.isPdf(file) ? handlePdf(file) : handlePhoto(file))
+          .catch(function (e) {
+            logPhoto(file.name, HF.pdfin.isPdf(file)
+              ? 'PDF 를 읽지 못했습니다 (' + e.message + ')'
+              : unreadableMessage(file), 'bad');
+            console.warn(file.name, e);
+          })
+          .then(function () {
+            updatePageStatus();
+            next();
+          });
       }, 10);
     })();
+  }
+
+  function handlePhoto(file) {
+    return HF.imageproc.loadFile(file).then(function (src) {
+      applyResult(file.name, HF.imageproc.processImage(src, { layouts: state.layouts }));
+    });
+  }
+
+  /* 아이패드 등에서 양식 PDF 에 직접 필기한 경우. 쪽마다 따로 처리한다. */
+  function handlePdf(file) {
+    return HF.pdfin.renderPages(file, function (n, total) {
+      logPhoto(file.name, 'PDF ' + n + ' / ' + total + '쪽 여는 중…', 'wait');
+    }).then(function (canvases) {
+      if (!canvases.length) throw new Error('쪽이 없습니다');
+      canvases.forEach(function (cv, idx) {
+        var label = file.name + ' (' + (idx + 1) + '쪽)';
+        applyResult(label, HF.imageproc.processImage(cv, { layouts: state.layouts }));
+      });
+    });
   }
 
   /* 아이폰 기본 형식(HEIC)은 크롬·엣지에서 열리지 않는다.
@@ -154,11 +174,11 @@
       var msg = res.reason === 'marker'
         ? '네 모서리의 검은 사각형을 찾지 못했습니다. 종이 전체가 나오게 다시 찍어 주세요.'
         : '쪽 번호를 읽지 못했습니다. 머리말의 작은 사각형 줄이 가려지지 않았는지 확인해 주세요.';
-      logPhoto(name, msg, 'bad', true);
+      logPhoto(name, msg, 'bad');
       return;
     }
     if (state.photoScope && state.photoScope !== res.scope) {
-      logPhoto(name, '다른 문자셋의 양식입니다. 같은 종류의 양식만 함께 올려 주세요.', 'bad', true);
+      logPhoto(name, '다른 문자셋의 양식입니다. 같은 종류의 양식만 함께 올려 주세요.', 'bad');
       return;
     }
     state.photoScope = res.scope;
@@ -179,11 +199,11 @@
     logPhoto(name, (res.pageIndex + 1) + '쪽 인식 · ' + added + '자 등록 · 빈 칸 ' + empty + '개' + tail, 'good');
   }
 
-  function logPhoto(name, msg, kind, replaceLast) {
+  function logPhoto(name, msg, kind) {
+    // 파일을 하나씩 차례로 처리하므로, 남아 있는 '읽는 중' 줄은 항상 이 파일 것이다
     var last = els.photoLog.lastElementChild;
-    if (replaceLast || (last && last.dataset.name === name && last.dataset.kind === 'wait')) {
-      if (last && last.dataset.name === name) last.remove();
-    }
+    if (last && last.dataset.kind === 'wait') last.remove();
+
     var li = document.createElement('li');
     li.className = 'log ' + kind;
     li.dataset.name = name;

@@ -63,16 +63,23 @@
 
   <div id="dropZone" class="drop">
     <div class="drop-icon">📷</div>
-    <div><b>사진을 여기에 끌어다 놓거나 눌러서 고르세요</b></div>
-    <div class="sub">여러 장을 한꺼번에 올려도 됩니다 · JPG 또는 PNG</div>
-    <input id="fileInput" type="file" accept="image/*" multiple hidden>
+    <div><b>사진이나 PDF 를 여기에 끌어다 놓거나 눌러서 고르세요</b></div>
+    <div class="sub">여러 개를 한꺼번에 올려도 됩니다 · JPG, PNG, PDF</div>
+    <input id="fileInput" type="file" accept="image/*,application/pdf,.pdf" multiple hidden>
+  </div>
+
+  <div class="callout">
+    <b>✏️ 아이패드가 있다면 인쇄하지 않아도 됩니다.</b>
+    내려받은 양식 PDF 를 굿노트·노타빌리티·파일 앱 등에서 열고 애플펜슬로 바로 쓴 다음,
+    그 PDF 를 그대로 올리세요. 사진보다 훨씬 정확합니다.
+    <span class="sub">펜은 <b>검은색</b>으로, 굵기는 넉넉하게. 형광펜이나 연한 색은 인식되지 않습니다.</span>
   </div>
 
   <ul class="tips">
     <li>종이 <b>네 모서리의 검은 사각형</b>이 사진에 모두 보여야 합니다.</li>
     <li>그림자가 지지 않게, 밝은 곳에서 위에서 내려다보며 찍으세요.</li>
     <li>스캐너로 스캔하면 가장 정확합니다.</li>
-    <li>같은 쪽을 여러 번 찍어 올리면 더 잘 나온 쪽이 자동으로 선택됩니다.</li>
+    <li>같은 쪽을 여러 번 올리면 더 잘 나온 쪽이 자동으로 선택됩니다.</li>
     <li>아이폰이라면 <b>설정 → 카메라 → 포맷 → ‘높은 호환성’</b> 으로 두면 확실합니다.
         (HEIC 사진은 브라우저가 열지 못합니다.)</li>
   </ul>
@@ -140,6 +147,7 @@
 <script src="src/imageproc.js"></script>
 <script src="src/template.js"></script>
 <script src="src/pdf.js"></script>
+<script src="src/pdfin.js"></script>
 <script src="src/app.js"></script>
 </body>
 </html>
