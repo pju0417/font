@@ -70,8 +70,10 @@
     ctx.font = f(30, 'bold');
     ctx.fillText('손글씨 폰트 양식', 150, 130);
     ctx.font = f(20);
-    ctx.fillText('연한 파란 글자를 따라 검은 펜으로 크고 진하게 쓰세요. 칸 밖으로 나가지 않게.',
-                 150, 168);
+    ctx.fillText(meta.scope === 'latin'
+      ? '연한 파란 글자를 따라 검은 펜으로 쓰세요. 굵은 밑선에 글자를 앉히고, 소문자는 중간선까지.'
+      : '연한 파란 글자를 따라 검은 펜으로 쓰세요. 파란 영역을 채우듯이, 십자선을 기준 삼아.',
+      150, 168);
     ctx.font = f(22, 'bold');
     ctx.fillText((page.index + 1) + ' / ' + meta.totalPages + ' 쪽', 560, 222);
     ctx.font = f(18);
@@ -99,32 +101,24 @@
                 g[2] * wr[2], g[3] * wr[3]];
       ctx.fillStyle = C_FILL;
       ctx.fillRect(gr[0], gr[1], gr[2], gr[3]);
+      drawQuadrants(ctx, wr);
       ctx.fillStyle = C_HINT;
       // 안내 글자를 안내 영역보다 살짝 작게 넣어 답답해 보이지 않게 한다
       var pad = 0.04;
       fitText(ctx, cell.hint, 200,
               [gr[0] + gr[2] * pad, gr[1] + gr[3] * pad,
                gr[2] * (1 - 2 * pad), gr[3] * (1 - 2 * pad)], cell.kind);
+    } else {
+      drawWritingLines(ctx, r, cell.baselineY);
+      ctx.fillStyle = C_HINT;
+      fitTextBaseline(ctx, cell.hint, r, cell.baselineY);
     }
 
     // 칸 테두리
     ctx.strokeStyle = C_LINE;
     ctx.lineWidth = 2;
+    ctx.setLineDash([]);
     ctx.strokeRect(r[0] + 1, r[1] + 1, r[2] - 2, r[3] - 2);
-
-    if (!cell.guide) {
-      // 라틴 칸: 베이스라인이 폰트 품질을 좌우하므로 뚜렷하게 표시한다
-      ctx.beginPath();
-      ctx.setLineDash([6, 5]);
-      ctx.lineWidth = 2;
-      ctx.moveTo(r[0] + 8, cell.baselineY);
-      ctx.lineTo(r[0] + r[2] - 8, cell.baselineY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.fillStyle = C_HINT;
-      fitTextBaseline(ctx, cell.hint, r, cell.baselineY);
-    }
 
     // 칸 안 작은 설명 (예: 초성 ㄱ 칸에 '가')
     if (cell.note) {
@@ -132,6 +126,63 @@
       ctx.font = f(16);
       ctx.fillText(cell.note, r[0] + 7, r[1] + 21);
     }
+  }
+
+  /* 안내선은 반드시 '짧은 점선'으로 그린다.
+   *
+   * 컬러로 인쇄하면 파랑 채널에서 알아서 사라지지만, 흑백 프린터로 뽑으면
+   * 회색 실선이 되어 이진화에 걸릴 수 있다. 점선이면 조각 하나하나가 잡티
+   * 제거 기준보다 작아 저절로 지워지고, 글자 획과 붙더라도 아주 짧은 꼬리만
+   * 남는다. 실선으로 바꾸면 획에 가로줄이 달라붙는 폰트가 나올 수 있다. */
+  function dash(ctx, x0, y0, x1, y1, pattern, width) {
+    ctx.save();
+    ctx.strokeStyle = C_LINE;
+    ctx.lineWidth = width;
+    ctx.setLineDash(pattern);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* 글꼴에서 실제 잰 값. 안내 글자가 정확히 선 위에 앉도록 하기 위함이다. */
+  var metricCache = {};
+
+  function latinMetrics(ctx, size) {
+    if (metricCache[size]) return metricCache[size];
+    ctx.save();
+    ctx.font = f(size);
+    metricCache[size] = {
+      asc: ctx.measureText('bdfhklHT').actualBoundingBoxAscent,   // 키 큰 글자
+      xh: ctx.measureText('xaceoz').actualBoundingBoxAscent,      // 소문자 높이
+      desc: ctx.measureText('gpqy').actualBoundingBoxDescent      // 내려가는 획
+    };
+    ctx.restore();
+    return metricCache[size];
+  }
+
+  /* 영어 노트처럼 네 줄을 긋는다.
+   * 소문자 높이(중간선)를 일정하게 잡아 주는 것이 폰트 품질에 특히 크게 작용한다. */
+  function drawWritingLines(ctx, r, baselineY) {
+    var m = latinMetrics(ctx, Math.round(r[3] * LATIN_HINT_RATIO));
+    var x0 = r[0] + 7, x1 = r[0] + r[2] - 7;
+    var top = Math.max(r[1] + 4, baselineY - m.asc);
+    var bot = Math.min(r[1] + r[3] - 4, baselineY + m.desc);
+
+    dash(ctx, x0, top, x1, top, [3, 7], 1);                    // 윗선
+    dash(ctx, x0, baselineY - m.xh, x1, baselineY - m.xh, [4, 6], 1);   // 중간선
+    dash(ctx, x0, baselineY, x1, baselineY, [9, 4], 2);        // 밑선(가장 중요)
+    dash(ctx, x0, bot, x1, bot, [3, 7], 1);                    // 아랫선
+  }
+
+  /* 한글 칸을 십자로 4등분한다.
+   * 칸 전체가 '음절 사각형'이고, 파란 영역은 그 안에서 이 자모가 차지하는 자리다.
+   * 십자선이 있으면 자모가 음절의 어디쯤 앉는지 눈으로 가늠하기 쉬워진다. */
+  function drawQuadrants(ctx, wr) {
+    var cx = wr[0] + wr[2] / 2, cy = wr[1] + wr[3] / 2;
+    dash(ctx, wr[0] + 4, cy, wr[0] + wr[2] - 4, cy, [4, 6], 1);
+    dash(ctx, cx, wr[1] + 4, cx, wr[1] + wr[3] - 4, [4, 6], 1);
   }
 
   /* 라틴 글자는 비율(대문자 높이, 내려가는 획)이 살아 있어야 하므로
@@ -158,6 +209,7 @@
     ctx.scale(scale, scale);
     drawPage(ctx, layout, layout.pages[pageIndex], {
       totalPages: layout.pages.length,
+      scope: layout.pages[pageIndex].cells[0].guide ? 'jamo' : 'latin',
       scopeLabel: HF.charset.SCOPES[layout.scope].label
     });
     return cv;

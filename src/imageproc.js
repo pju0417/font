@@ -299,7 +299,15 @@
     if (paper - darkest < 45) {
       return { mask: new Uint8Array(crop.w * crop.h), ink: 0, empty: true };
     }
-    var thr = Math.min(otsu(histogramOf(crop.gray), crop.gray.length), paper - 45);
+    /* 잉크로 인정할 어둡기의 상한.
+     *
+     * 안내선은 컬러로 인쇄하면 파랑 채널에서 알아서 사라지지만, 흑백 프린터로
+     * 뽑으면 연한 회색 실물이 되어 남는다. 게다가 점선이라 조각마다 칸 테두리에
+     * 닿지 않아 '가늘고 긴 선 제거'도 빠져나간다. 그래서 종이 밝기의 62% 보다
+     * 어두운 것만 잉크로 본다. 안내선(종이 대비 약 74%)은 걸러지고
+     * 검은 펜(약 15%)은 넉넉히 통과한다. */
+    var thr = Math.min(otsu(histogramOf(crop.gray), crop.gray.length),
+                       paper - 45, paper * 0.62);
     var mask = new Uint8Array(crop.w * crop.h);
     var ink = 0;
     for (var i = 0; i < mask.length; i++) {
