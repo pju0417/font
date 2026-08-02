@@ -23,11 +23,20 @@
   var COLS = 6, ROWS = 8, GAP = 16;
   var PER_PAGE = COLS * ROWS;   // 48칸
 
-  var CELL_INSET = 12;          // 칸 테두리 안쪽 여백(필기 권장 영역)
-  /* 베이스라인 위치. 위쪽 공간이 대문자·ㅂㄷㅎ 같은 키 큰 글자,
-   * 아래쪽 공간이 g·p·y 처럼 내려가는 획을 담는다.
-   * 이 비율이 곧 완성된 폰트의 글자 크기를 정한다. */
-  var BASELINE_RATIO = 0.72;
+  /* 한글 칸: 잘라내는 영역이 곧 '음절 사각형'이다. */
+  var CELL_INSET = 12;
+
+  /* 라틴 칸: '쓰기 띠'(윗선~아랫선)와 '잘라내는 영역'을 따로 둔다.
+   *
+   * 둘을 같게 두면 g·p·y 의 꼬리가 잘라낸 영역 밖으로 나가 평평하게 잘린다.
+   * 그래서 잘라내는 영역을 띠보다 위아래로 LATIN_MARGIN 만큼 넓게 잡고,
+   * 폰트의 크기 기준(em)은 잘라낸 높이가 아니라 '띠 높이'로 정한다.
+   * 이렇게 하면 획이 조금 넘쳐도 담기고, 글자 크기는 일정하게 유지된다. */
+  var LATIN_INSET = 5;
+  var LATIN_MARGIN = 5;
+  var LATIN_ASCENT_RATIO = 0.75;   // 띠에서 베이스라인 위쪽이 차지하는 비율
+
+  var BASELINE_RATIO = 0.72;       // 한글 칸에서만 쓰는 참고값
 
   var SCOPE_ID = { latin: 0, full: 1 };
 
@@ -92,14 +101,20 @@
       var slice = cells.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
       var placed = slice.map(function (cell, i) {
         var r = rects[i];
+        var inset = cell.guide ? CELL_INSET : LATIN_INSET;
+        var wr = [r[0] + inset, r[1] + inset, r[2] - 2 * inset, r[3] - 2 * inset];
         var out = {
           key: cell.key, kind: cell.kind, form: cell.form, idx: cell.idx,
           unicode: cell.unicode, hint: cell.hint, note: cell.note, guide: cell.guide,
-          rect: r,
-          writeRect: [r[0] + CELL_INSET, r[1] + CELL_INSET,
-                      r[2] - 2 * CELL_INSET, r[3] - 2 * CELL_INSET],
-          baselineY: r[1] + Math.round(r[3] * BASELINE_RATIO)
+          rect: r, writeRect: wr
         };
+        if (cell.guide) {
+          out.baselineY = r[1] + Math.round(r[3] * BASELINE_RATIO);
+        } else {
+          out.band = wr[3] - 2 * LATIN_MARGIN;          // 윗선~아랫선 높이
+          out.bandTop = wr[1] + LATIN_MARGIN;
+          out.baselineY = out.bandTop + Math.round(LATIN_ASCENT_RATIO * out.band);
+        }
         return out;
       });
       pages.push({ index: p, code: encodeCode(p, scope), cells: placed });

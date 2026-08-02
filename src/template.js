@@ -109,9 +109,9 @@
               [gr[0] + gr[2] * pad, gr[1] + gr[3] * pad,
                gr[2] * (1 - 2 * pad), gr[3] * (1 - 2 * pad)], cell.kind);
     } else {
-      drawWritingLines(ctx, r, cell.baselineY);
+      drawWritingLines(ctx, cell);
       ctx.fillStyle = C_HINT;
-      fitTextBaseline(ctx, cell.hint, r, cell.baselineY);
+      fitTextBaseline(ctx, cell.hint, cell);
     }
 
     // 칸 테두리
@@ -146,34 +146,43 @@
     ctx.restore();
   }
 
-  /* 글꼴에서 실제 잰 값. 안내 글자가 정확히 선 위에 앉도록 하기 위함이다. */
-  var metricCache = {};
+  /* 글꼴의 세로 비율(글자 크기 1 기준). 안내 글자를 선에 정확히 앉히는 데 쓴다. */
+  var ratioCache = null;
 
-  function latinMetrics(ctx, size) {
-    if (metricCache[size]) return metricCache[size];
+  function latinRatios(ctx) {
+    if (ratioCache) return ratioCache;
+    var S = 200;
     ctx.save();
-    ctx.font = f(size);
-    metricCache[size] = {
-      asc: ctx.measureText('bdfhklHT').actualBoundingBoxAscent,   // 키 큰 글자
-      xh: ctx.measureText('xaceoz').actualBoundingBoxAscent,      // 소문자 높이
-      desc: ctx.measureText('gpqy').actualBoundingBoxDescent      // 내려가는 획
+    ctx.font = f(S);
+    ratioCache = {
+      asc: ctx.measureText('bdfhklHT').actualBoundingBoxAscent / S,  // 키 큰 글자
+      xh: ctx.measureText('xaceoz').actualBoundingBoxAscent / S,     // 소문자 높이
+      desc: ctx.measureText('gpqy').actualBoundingBoxDescent / S     // 내려가는 획
     };
     ctx.restore();
-    return metricCache[size];
+    return ratioCache;
+  }
+
+  /* 안내 글자 크기는 '쓰기 띠'가 정한다.
+   * 반대로 글자 크기에서 선 위치를 잡으면, 글꼴마다 띠 밖으로 삐져나가
+   * 잘라낸 영역에서 꼬리가 잘리는 일이 생긴다. */
+  function latinHintSize(ctx, cell) {
+    return Math.round((cell.baselineY - cell.bandTop) / latinRatios(ctx).asc);
   }
 
   /* 영어 노트처럼 네 줄을 긋는다.
    * 소문자 높이(중간선)를 일정하게 잡아 주는 것이 폰트 품질에 특히 크게 작용한다. */
-  function drawWritingLines(ctx, r, baselineY) {
-    var m = latinMetrics(ctx, Math.round(r[3] * LATIN_HINT_RATIO));
+  function drawWritingLines(ctx, cell) {
+    var r = cell.rect;
     var x0 = r[0] + 7, x1 = r[0] + r[2] - 7;
-    var top = Math.max(r[1] + 4, baselineY - m.asc);
-    var bot = Math.min(r[1] + r[3] - 4, baselineY + m.desc);
+    var bl = cell.baselineY;
+    var mean = bl - latinRatios(ctx).xh * latinHintSize(ctx, cell);
 
-    dash(ctx, x0, top, x1, top, [3, 7], 1);                    // 윗선
-    dash(ctx, x0, baselineY - m.xh, x1, baselineY - m.xh, [4, 6], 1);   // 중간선
-    dash(ctx, x0, baselineY, x1, baselineY, [9, 4], 2);        // 밑선(가장 중요)
-    dash(ctx, x0, bot, x1, bot, [3, 7], 1);                    // 아랫선
+    dash(ctx, x0, cell.bandTop, x1, cell.bandTop, [3, 7], 1);              // 윗선
+    dash(ctx, x0, mean, x1, mean, [4, 6], 1);                              // 중간선
+    dash(ctx, x0, bl, x1, bl, [9, 4], 2);                                  // 밑선(가장 중요)
+    var bot = cell.bandTop + cell.band;
+    dash(ctx, x0, bot, x1, bot, [3, 7], 1);                                // 아랫선
   }
 
   /* 한글 칸을 십자로 4등분한다.
@@ -186,18 +195,14 @@
   }
 
   /* 라틴 글자는 비율(대문자 높이, 내려가는 획)이 살아 있어야 하므로
-   * 늘이지 않고 베이스라인 위에 자연스러운 크기로 놓는다.
-   * 이 크기가 곧 완성된 폰트의 글자 크기가 되므로, 키 큰 글자가 칸 위쪽에
-   * 거의 닿을 만큼 크게 잡는다. 작게 쓰면 폰트도 작게 나온다. */
-  var LATIN_HINT_RATIO = 0.84;
-
-  function fitTextBaseline(ctx, text, rect, baselineY) {
-    var size = Math.round(rect[3] * LATIN_HINT_RATIO);
-    ctx.font = f(size);
+   * 늘이지 않고 베이스라인 위에 자연스러운 크기로 놓는다. */
+  function fitTextBaseline(ctx, text, cell) {
+    var r = cell.rect;
+    ctx.font = f(latinHintSize(ctx, cell));
     var m = ctx.measureText(text);
     var w = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
-    var x = rect[0] + (rect[2] - w) / 2 + m.actualBoundingBoxLeft;
-    ctx.fillText(text, x, baselineY);
+    var x = r[0] + (r[2] - w) / 2 + m.actualBoundingBoxLeft;
+    ctx.fillText(text, x, cell.baselineY);
   }
 
   function renderPage(layout, pageIndex, scale) {

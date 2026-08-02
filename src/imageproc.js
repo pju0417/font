@@ -373,6 +373,8 @@
         mask: cleaned.mask, w: crop.w, h: crop.h,
         bbox: bbox, ink: cleaned.ink, status: status,
         baselineLocal: baselineLocal,
+        // 라틴은 '쓰기 띠' 높이가 폰트 크기의 기준이다(잘라낸 높이가 아니라).
+        bandHeight: (cell.band || cell.writeRect[3]) * s,
         cellHeight: cell.rect[3] * s,
         cellTopOffset: (cell.writeRect[1] - cell.rect[1]) * s
       };

@@ -32,9 +32,12 @@
   }
 
   /* 라틴: 베이스라인을 y=0 에 맞추고, 모든 칸에 같은 배율을 써서
-   * 글자끼리의 크기 관계(대문자 vs 소문자)를 그대로 살린다. */
+   * 글자끼리의 크기 관계(대문자 vs 소문자)를 그대로 살린다.
+   *
+   * 배율의 기준은 '쓰기 띠' 높이다. 잘라낸 높이를 쓰면, 내려가는 획을 담으려고
+   * 아래를 넓게 자른 만큼 글자가 통째로 작아져 버린다. */
   function latinGlyph(cell, contours) {
-    var s = UPM / cell.h;
+    var s = UPM / (cell.bandHeight || cell.h);
     var xoff = SIDE_BEARING - cell.bbox.x * s;
     var out = contours.map(function (c) {
       return c.map(function (p) {
