@@ -92,38 +92,66 @@
     return rects;
   }
 
-  /* 문자셋 전체를 쪽 단위로 나눠 좌표를 붙인다. */
+  function place(cell, r) {
+    var isLatin = cell.kind === 'latin';
+    var inset = isLatin ? LATIN_INSET : CELL_INSET;
+    var wr = [r[0] + inset, r[1] + inset, r[2] - 2 * inset, r[3] - 2 * inset];
+    var out = {
+      key: cell.key, kind: cell.kind, form: cell.form, idx: cell.idx,
+      unicode: cell.unicode, hint: cell.hint, note: cell.note, guide: cell.guide,
+      rect: r, writeRect: wr
+    };
+    if (isLatin) {
+      out.band = wr[3] - 2 * LATIN_MARGIN;          // 윗선~아랫선 높이
+      out.bandTop = wr[1] + LATIN_MARGIN;
+      out.baselineY = out.bandTop + Math.round(LATIN_ASCENT_RATIO * out.band);
+    } else {
+      out.baselineY = r[1] + Math.round(r[3] * BASELINE_RATIO);
+    }
+    return out;
+  }
+
+  /* 문자셋 전체를 쪽 단위로 나눠 좌표를 붙인다.
+   *
+   * 기본 시트(라틴·자모)와 통글자 시트는 쪽을 나눠서 담는다. 섞어 담으면
+   * '기본 몇 장, 추가 몇 장'이 흐려지고, 통글자 시트를 안 뽑은 사람도
+   * 마지막 기본 시트에 통글자가 딸려 나온다. */
   function build(scope) {
-    var cells = HF.charset.build(scope);
     var rects = cellRects();
     var pages = [];
-    for (var p = 0; p * PER_PAGE < cells.length; p++) {
-      var slice = cells.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
-      var placed = slice.map(function (cell, i) {
-        var r = rects[i];
-        var inset = cell.guide ? CELL_INSET : LATIN_INSET;
-        var wr = [r[0] + inset, r[1] + inset, r[2] - 2 * inset, r[3] - 2 * inset];
-        var out = {
-          key: cell.key, kind: cell.kind, form: cell.form, idx: cell.idx,
-          unicode: cell.unicode, hint: cell.hint, note: cell.note, guide: cell.guide,
-          rect: r, writeRect: wr
-        };
-        if (cell.guide) {
-          out.baselineY = r[1] + Math.round(r[3] * BASELINE_RATIO);
-        } else {
-          out.band = wr[3] - 2 * LATIN_MARGIN;          // 윗선~아랫선 높이
-          out.bandTop = wr[1] + LATIN_MARGIN;
-          out.baselineY = out.bandTop + Math.round(LATIN_ASCENT_RATIO * out.band);
-        }
-        return out;
-      });
-      pages.push({ index: p, code: encodeCode(p, scope), cells: placed });
+
+    function paginate(cells, kind) {
+      for (var p = 0; p * PER_PAGE < cells.length; p++) {
+        var slice = cells.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+        var index = pages.length;
+        pages.push({
+          index: index, kind: kind, code: encodeCode(index, scope),
+          cells: slice.map(function (cell, i) { return place(cell, rects[i]); })
+        });
+      }
     }
+
+    var base = HF.charset.build(scope);
+    var extra = scope === 'full' ? HF.charset.buildSyllables() : [];
+    paginate(base, 'base');
+    paginate(extra, 'syllable');
+
+    /* 쪽 번호는 종이에 4비트로 인쇄된다. 목록을 늘리다 16쪽을 넘기면
+     * 17쪽이 1쪽으로 읽혀 엉뚱한 글자에 붙는데 오류가 나지 않는다.
+     * 그런 일이 조용히 벌어지지 않도록 여기서 막는다. */
+    if (pages.length > 16) {
+      throw new Error('쪽 수가 16을 넘었습니다(' + pages.length + '쪽). ' +
+                      'syllables.js 의 목록을 줄이거나 쪽 번호 비트를 늘려야 합니다.');
+    }
+
     return {
       scope: scope, dpi: DPI, pageW: PAGE_W, pageH: PAGE_H,
       fiducials: fiducials(), fiducialSize: FID_SIZE,
       codeBoxes: codeBoxes(), codeBits: CODE_BITS,
-      perPage: PER_PAGE, pages: pages, totalCells: cells.length
+      perPage: PER_PAGE, pages: pages,
+      basePages: Math.ceil(base.length / PER_PAGE),
+      syllablePages: Math.ceil(extra.length / PER_PAGE),
+      totalCells: base.length + extra.length
     };
   }
 

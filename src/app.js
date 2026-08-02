@@ -20,14 +20,18 @@
     ['scope', 'familyName', 'familyNameKo', 'dropZone', 'fileInput', 'pageStatus',
      'photoLog', 'buildBtn', 'progress', 'progressBar', 'progressText', 'result',
      'previewText', 'previewBox', 'previewSize', 'downloadBtn', 'reportBox',
-     'pdfBtn', 'pngBtn', 'templatePreview', 'sheetCount', 'resetBtn', 'installHelp']
+     'pdfBtn', 'pngBtn', 'templatePreview', 'sheetCount', 'resetBtn', 'installHelp',
+     'extraSheets', 'extraLabel', 'extraNote']
       .forEach(function (id) { els[id] = $(id); });
 
+    fillExtraOptions();
     els.scope.value = localStorage.getItem('hf.scope') || 'full';
+    els.extraSheets.value = localStorage.getItem('hf.extra') || '0';
     els.familyName.value = localStorage.getItem('hf.familyName') || 'My Handwriting';
     els.familyNameKo.value = localStorage.getItem('hf.familyNameKo') || '내손글씨';
 
     els.scope.addEventListener('change', onScopeChange);
+    els.extraSheets.addEventListener('change', onScopeChange);
     els.familyName.addEventListener('input', remember);
     els.familyNameKo.addEventListener('input', remember);
     els.pdfBtn.addEventListener('click', downloadPdf);
@@ -67,11 +71,36 @@
     localStorage.setItem('hf.familyNameKo', els.familyNameKo.value);
   }
 
+  /* 통글자 시트는 몇 장을 뽑든 내용이 같다(목록이 고정이라 앞에서부터 채운다).
+   * 그래서 나중에 더 뽑아 이어 써도 앞 시트와 어긋나지 않는다. */
+  function fillExtraOptions() {
+    var L = state.layouts.full;
+    var opts = ['<option value="0">쓰지 않음</option>'];
+    for (var i = 1; i <= L.syllablePages; i++) {
+      var upto = Math.min(i * L.perPage, HF.syllables.count);
+      opts.push('<option value="' + i + '">' + i + '장 · 자주 쓰는 글자 ' + upto + '자</option>');
+    }
+    els.extraSheets.innerHTML = opts.join('');
+  }
+
+  function extraCount() {
+    return state.scope === 'full' ? (parseInt(els.extraSheets.value, 10) || 0) : 0;
+  }
+
   function onScopeChange() {
     state.scope = els.scope.value;
     localStorage.setItem('hf.scope', state.scope);
+    localStorage.setItem('hf.extra', els.extraSheets.value);
+    var isFull = state.scope === 'full';
+    els.extraLabel.hidden = !isFull;
+    els.extraNote.hidden = !isFull;
+
     var L = state.layouts[state.scope];
-    els.sheetCount.textContent = L.pages.length + '장 (' + L.totalCells + '칸)';
+    var pages = L.basePages + extraCount();
+    var cells = 0;
+    for (var i = 0; i < pages; i++) cells += L.pages[i].cells.length;
+    els.sheetCount.textContent = pages + '장 (' + cells + '칸)' +
+      (extraCount() ? ' · 기본 ' + L.basePages + '장 + 통글자 ' + extraCount() + '장' : '');
     showTemplatePreview();
     updatePageStatus();
   }
@@ -90,7 +119,10 @@
 
   function allPages(scale) {
     var L = state.layouts[state.scope];
-    return L.pages.map(function (_, i) { return HF.template.renderPage(L, i, scale); });
+    var n = L.basePages + extraCount();
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(HF.template.renderPage(L, i, scale));
+    return out;
   }
 
   function downloadPdf() {
@@ -217,12 +249,16 @@
 
   function updatePageStatus() {
     var L = currentLayout();
+    var scope = state.photoScope || state.scope;
     els.pageStatus.innerHTML = '';
+    // 안 뽑기로 한 통글자 시트는 굳이 보여 주지 않는다 (올린 게 있으면 보여 준다)
+    var show = L.basePages + extraCount();
     L.pages.forEach(function (p, i) {
-      var seen = state.seen[(state.photoScope || state.scope) + ':' + i];
+      var seen = state.seen[scope + ':' + i];
+      if (i >= show && !seen) return;
       var d = document.createElement('div');
-      d.className = 'page-chip ' + (seen ? 'done' : '');
-      d.textContent = (i + 1) + '쪽';
+      d.className = 'page-chip ' + (seen ? 'done' : '') + (p.kind === 'syllable' ? ' extra' : '');
+      d.textContent = (i + 1) + '쪽' + (p.kind === 'syllable' ? ' 통글자' : '');
       els.pageStatus.appendChild(d);
     });
     var n = Object.keys(state.collected).length;
@@ -305,11 +341,14 @@
     var rows = [
       ['영문 · 숫자 · 기호', r.latin + ' / 94자'],
       ['한글 자모', r.jamo + ' / 86개'],
-      ['만들어진 한글', r.syllables.toLocaleString() + ' / ' +
-                       HF.hangul.COUNT.toLocaleString() + '자'],
+      ['통글자로 직접 쓴 한글', r.written + '자'],
+      ['자모로 조합한 한글', r.syllables.toLocaleString() + '자'],
+      ['한글 전체', (r.written + r.syllables).toLocaleString() + ' / ' +
+                    HF.hangul.COUNT.toLocaleString() + '자'],
       ['전체 글리프', r.glyphCount.toLocaleString() + '개']
     ];
-    if (!r.jamo) rows.splice(1, 2);
+    if (!r.jamo) rows.splice(1, 4);
+    else if (!r.written) rows.splice(2, 1);
     var html = '<table>' + rows.map(function (x) {
       return '<tr><th>' + x[0] + '</th><td>' + x[1] + '</td></tr>';
     }).join('') + '</table>';

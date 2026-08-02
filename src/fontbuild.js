@@ -50,12 +50,12 @@
     };
   }
 
-  /* 자모: 칸 전체를 '음절 상자' 에 그대로 겹쳐 놓는다.
+  /* 칸 전체를 '음절 상자' 에 그대로 겹쳐 놓는다.
    *
    * 잉크 영역을 안내 상자에 억지로 맞추지 않는 것이 중요하다. 그렇게 하면
    * 'ㅣ' 처럼 획 하나짜리 자모가 상자만큼 굵은 막대가 되어 버린다.
    * 쓴 자리를 그대로 두고, 조립할 때는 안내 상자를 기준으로 늘인다. */
-  function jamoGlyph(cell, contours, guide) {
+  function squareGlyph(cell, contours) {
     var sx = SYL.w / cell.w;
     var sy = SYL.h / cell.h;
     var out = contours.map(function (c) {
@@ -63,7 +63,7 @@
         return { x: SYL.left + p.x * sx, y: SYL.top - p.y * sy, on: p.on };
       });
     });
-    return { contours: out, advance: UPM, geom: unitToFont(guide) };
+    return { contours: out, advance: UPM };
   }
 
   function componentFor(G, B) {
@@ -106,7 +106,8 @@
    * info: 폰트 이름 등
    * onProgress(ratio, label) */
   function build(collected, info, onProgress) {
-    var report = { glyphs: {}, latin: 0, jamo: 0, syllables: 0, missing: [], skipped: [] };
+    var report = { glyphs: {}, latin: 0, jamo: 0, written: 0, syllables: 0,
+                   missing: [], skipped: [] };
     var traceOpts = {
       smoothPasses: info.smoothPasses != null ? info.smoothPasses : 2,
       simplifyEps: info.simplifyEps != null ? info.simplifyEps : 0.9,
@@ -119,7 +120,7 @@
     cmap.push([0x20, 1]);
 
     var keys = Object.keys(collected).sort();
-    var jamoIndex = {}, jamoGeom = {};
+    var jamoIndex = {}, jamoGeom = {}, writtenSyllables = {};
     var latinPairs = [];
     var done = 0;
 
@@ -139,11 +140,14 @@
         glyphs.push(latinGlyph(cell, contours));
         latinPairs.push([cell.unicode, idx]);
         report.latin++;
+      } else if (cell.kind === 'syllable') {
+        // 통째로 쓴 글자. 자모를 조합해 만든 것보다 우선한다.
+        glyphs.push(squareGlyph(cell, contours));
+        writtenSyllables[cell.unicode] = idx;
+        report.written++;
       } else {
-        var guide = HF.hangul.guideBox(cell.kind, cell.form);
-        var g = jamoGlyph(cell, contours, guide);
-        jamoGeom[key] = g.geom;
-        glyphs.push({ advance: g.advance, contours: g.contours });
+        glyphs.push(squareGlyph(cell, contours));
+        jamoGeom[key] = unitToFont(HF.hangul.guideBox(cell.kind, cell.form));
         jamoIndex[key] = idx;
         report.jamo++;
       }
@@ -155,11 +159,17 @@
 
     cmap = cmap.concat(latinPairs);
 
+    // 통째로 쓴 글자를 먼저 등록한다
+    Object.keys(writtenSyllables).forEach(function (code) {
+      cmap.push([+code, writtenSyllables[code]]);
+    });
+
     // ---- 한글 음절 조립 ----
     if (Object.keys(jamoIndex).length) {
       if (onProgress) onProgress(0.62, '한글 음절 조립 중');
       var missing = {};
       for (var code = HF.hangul.FIRST; code <= HF.hangul.LAST; code++) {
+        if (writtenSyllables[code] != null) continue;   // 손으로 쓴 글자가 이긴다
         var parts = HF.hangul.compose(code);
         var comps = [];
         var ok = true;

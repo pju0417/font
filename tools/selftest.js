@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 
-['hangul', 'charset', 'layout', 'trace', 'ttf', 'fontbuild'].forEach(function (m) {
+['hangul', 'syllables', 'charset', 'layout', 'trace', 'ttf', 'fontbuild'].forEach(function (m) {
   require(path.join(__dirname, '..', 'src', m + '.js'));
 });
 const HF = globalThis.HF;

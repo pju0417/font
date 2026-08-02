@@ -101,6 +101,7 @@ button:disabled { opacity: .5; cursor: default; }
   padding: 5px 14px; border-radius: 999px; font-size: 14px;
   border: 1px solid var(--line); color: var(--muted); background: #fbfcfe;
 }
+.page-chip.extra { border-style: dashed; }
 .page-chip.done { background: #e8f5ee; border-color: #b6ddc6; color: var(--good); font-weight: 600; }
 .page-chip.done::before { content: "✓ "; }
 

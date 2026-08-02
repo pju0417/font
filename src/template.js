@@ -70,14 +70,15 @@
     ctx.font = f(30, 'bold');
     ctx.fillText('손글씨 폰트 양식', 150, 130);
     ctx.font = f(20);
-    ctx.fillText(meta.scope === 'latin'
-      ? '연한 파란 글자를 따라 검은 펜으로 쓰세요. 굵은 밑선에 글자를 앉히고, 소문자는 중간선까지.'
-      : '연한 파란 글자를 따라 검은 펜으로 쓰세요. 파란 영역을 채우듯이, 십자선을 기준 삼아.',
-      150, 168);
+    ctx.fillText({
+      latin: '연한 파란 글자를 따라 검은 펜으로 쓰세요. 굵은 밑선에 글자를 앉히고, 소문자는 중간선까지.',
+      jamo: '연한 파란 글자를 따라 검은 펜으로 쓰세요. 파란 영역을 채우듯이, 십자선을 기준 삼아.',
+      syllable: '연한 파란 글자를 따라 검은 펜으로 쓰세요. 십자선을 기준으로 칸을 고르게 채우듯이.'
+    }[meta.scope], 150, 168);
     ctx.font = f(22, 'bold');
     ctx.fillText((page.index + 1) + ' / ' + meta.totalPages + ' 쪽', 560, 222);
     ctx.font = f(18);
-    ctx.fillText(meta.scopeLabel, 660, 222);
+    ctx.fillText(meta.scopeLabel, 665, 222);
 
     // --- 칸 ---
     page.cells.forEach(function (cell) {
@@ -95,7 +96,14 @@
     var r = cell.rect, wr = cell.writeRect;
 
     // 자모 칸: 어느 위치·크기로 써야 하는지 옅은 배경으로 알려 준다
-    if (cell.guide) {
+    if (cell.kind === 'syllable') {
+      // 통글자 칸: 칸 전체가 글자 하나의 자리다. 십자선만 기준으로 준다.
+      drawQuadrants(ctx, wr);
+      ctx.fillStyle = C_HINT;
+      fitText(ctx, cell.hint, 200,
+              [wr[0] + wr[2] * 0.04, wr[1] + wr[3] * 0.04,
+               wr[2] * 0.92, wr[3] * 0.92], 'syllable');
+    } else if (cell.guide) {
       var g = cell.guide;
       var gr = [wr[0] + g[0] * wr[2], wr[1] + g[1] * wr[3],
                 g[2] * wr[2], g[3] * wr[3]];
@@ -212,10 +220,14 @@
     cv.height = Math.round(layout.pageH * scale);
     var ctx = cv.getContext('2d');
     ctx.scale(scale, scale);
-    drawPage(ctx, layout, layout.pages[pageIndex], {
+    var page = layout.pages[pageIndex];
+    var first = page.cells[0];
+    drawPage(ctx, layout, page, {
       totalPages: layout.pages.length,
-      scope: layout.pages[pageIndex].cells[0].guide ? 'jamo' : 'latin',
-      scopeLabel: HF.charset.SCOPES[layout.scope].label
+      scope: first.kind === 'latin' ? 'latin' : (first.kind === 'syllable' ? 'syllable' : 'jamo'),
+      scopeLabel: page.kind === 'syllable'
+        ? '통글자 시트 (선택)'
+        : HF.charset.SCOPES[layout.scope].label
     });
     return cv;
   }

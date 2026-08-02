@@ -3,7 +3,7 @@
  */
 'use strict';
 const path = require('path');
-['hangul', 'charset', 'layout'].forEach(m => require(path.join(__dirname, '..', 'src', m + '.js')));
+['hangul', 'syllables', 'charset', 'layout'].forEach(m => require(path.join(__dirname, '..', 'src', m + '.js')));
 const HF = globalThis.HF;
 
 const scope = process.argv[2] || 'full';

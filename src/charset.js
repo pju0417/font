@@ -66,6 +66,17 @@
     return cells;
   }
 
+  /* 통글자 칸: 음절 하나를 통째로 쓴다. 조합해 만든 글자보다 자연스럽고,
+   * 받침이 들어간 실제 글자를 손으로 직접 쓸 수 있다. */
+  function buildSyllables() {
+    return HF.syllables.list.map(function (cp) {
+      return {
+        key: 'S:' + hex4(cp), kind: 'syllable', unicode: cp,
+        hint: String.fromCharCode(cp), note: '', guide: null
+      };
+    });
+  }
+
   function hex4(n) {
     var s = n.toString(16).toUpperCase();
     while (s.length < 4) s = '0' + s;
@@ -81,6 +92,7 @@
 
   HF.charset = {
     build: build,
+    buildSyllables: buildSyllables,
     hex4: hex4,
     SCOPES: {
       latin: { label: '영문 · 숫자 · 기호', count: 94 },
