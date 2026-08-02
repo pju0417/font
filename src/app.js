@@ -21,17 +21,15 @@
      'photoLog', 'buildBtn', 'progress', 'progressBar', 'progressText', 'result',
      'previewText', 'previewBox', 'previewSize', 'downloadBtn', 'reportBox',
      'pdfBtn', 'pngBtn', 'templatePreview', 'sheetCount', 'resetBtn', 'installHelp',
-     'extraSheets', 'extraLabel', 'extraNote']
+     'passageBox', 'passageList', 'extraNote']
       .forEach(function (id) { els[id] = $(id); });
 
-    fillExtraOptions();
+    buildPassageList();
     els.scope.value = localStorage.getItem('hf.scope') || 'full';
-    els.extraSheets.value = localStorage.getItem('hf.extra') || '0';
     els.familyName.value = localStorage.getItem('hf.familyName') || 'My Handwriting';
     els.familyNameKo.value = localStorage.getItem('hf.familyNameKo') || '내손글씨';
 
     els.scope.addEventListener('change', onScopeChange);
-    els.extraSheets.addEventListener('change', onScopeChange);
     els.familyName.addEventListener('input', remember);
     els.familyNameKo.addEventListener('input', remember);
     els.pdfBtn.addEventListener('click', downloadPdf);
@@ -71,36 +69,72 @@
     localStorage.setItem('hf.familyNameKo', els.familyNameKo.value);
   }
 
-  /* 통글자 시트는 몇 장을 뽑든 내용이 같다(목록이 고정이라 앞에서부터 채운다).
-   * 그래서 나중에 더 뽑아 이어 써도 앞 시트와 어긋나지 않는다. */
-  function fillExtraOptions() {
+  /* 필사 시트는 글마다 쪽이 정해져 있다(목록이 코드에 고정이다).
+   * 그래서 어떤 글을 골랐든 종이의 쪽 번호만 보면 어느 글의 몇 번째 장인지 알 수 있다. */
+  function buildPassageList() {
     var L = state.layouts.full;
-    var opts = ['<option value="0">쓰지 않음</option>'];
-    for (var i = 1; i <= L.syllablePages; i++) {
-      var upto = Math.min(i * L.perPage, HF.syllables.count);
-      opts.push('<option value="' + i + '">' + i + '장 · 자주 쓰는 글자 ' + upto + '자</option>');
-    }
-    els.extraSheets.innerHTML = opts.join('');
+    var chosen = JSON.parse(localStorage.getItem('hf.passages') || '[]');
+    var byId = {};
+    L.pages.forEach(function (p) {
+      if (p.kind !== 'passage') return;
+      var e = byId[p.passage.id] || (byId[p.passage.id] = { p: p.passage, pages: [] });
+      e.pages.push(p.index);
+    });
+
+    els.passageList.innerHTML = '';
+    HF.passages.list.forEach(function (ps) {
+      var e = byId[ps.id];
+      if (!e) return;
+      var label = document.createElement('label');
+      label.className = 'passage';
+      label.innerHTML =
+        '<input type="checkbox" value="' + ps.id + '">' +
+        '<span class="t"></span><span class="a"></span>' +
+        '<span class="n"></span><span class="d"></span>';
+      label.querySelector('.t').textContent = ps.title;
+      label.querySelector('.a').textContent = ps.author;
+      label.querySelector('.n').textContent = e.pages.length + '장';
+      label.querySelector('.d').textContent = ps.note || '';
+      var box = label.querySelector('input');
+      box.checked = chosen.indexOf(ps.id) >= 0;
+      box.addEventListener('change', onScopeChange);
+      els.passageList.appendChild(label);
+    });
   }
 
-  function extraCount() {
-    return state.scope === 'full' ? (parseInt(els.extraSheets.value, 10) || 0) : 0;
+  function chosenPassages() {
+    if (state.scope !== 'full') return [];
+    return Array.prototype.slice
+      .call(els.passageList.querySelectorAll('input:checked'))
+      .map(function (b) { return b.value; });
+  }
+
+  /* 인쇄할 쪽 = 기본 시트 전부 + 고른 글의 쪽들 */
+  function selectedPageIndexes() {
+    var L = state.layouts[state.scope];
+    var picked = chosenPassages();
+    var out = [];
+    L.pages.forEach(function (p) {
+      if (p.kind === 'base') out.push(p.index);
+      else if (picked.indexOf(p.passage.id) >= 0) out.push(p.index);
+    });
+    return out;
   }
 
   function onScopeChange() {
     state.scope = els.scope.value;
     localStorage.setItem('hf.scope', state.scope);
-    localStorage.setItem('hf.extra', els.extraSheets.value);
+    localStorage.setItem('hf.passages', JSON.stringify(chosenPassages()));
     var isFull = state.scope === 'full';
-    els.extraLabel.hidden = !isFull;
+    els.passageBox.hidden = !isFull;
     els.extraNote.hidden = !isFull;
 
     var L = state.layouts[state.scope];
-    var pages = L.basePages + extraCount();
-    var cells = 0;
-    for (var i = 0; i < pages; i++) cells += L.pages[i].cells.length;
-    els.sheetCount.textContent = pages + '장 (' + cells + '칸)' +
-      (extraCount() ? ' · 기본 ' + L.basePages + '장 + 통글자 ' + extraCount() + '장' : '');
+    var idx = selectedPageIndexes();
+    var cells = idx.reduce(function (n, i) { return n + L.pages[i].cells.length; }, 0);
+    var extra = idx.length - L.basePages;
+    els.sheetCount.textContent = idx.length + '장 (' + cells + '칸)' +
+      (extra > 0 ? ' · 기본 ' + L.basePages + '장 + 필사 ' + extra + '장' : '');
     showTemplatePreview();
     updatePageStatus();
   }
@@ -112,17 +146,19 @@
   // ---------- 1단계: 양식 ----------
 
   function showTemplatePreview() {
-    var cv = HF.template.renderPage(state.layouts[state.scope], 0, 0.42);
+    var L = state.layouts[state.scope];
+    var idx = selectedPageIndexes();
+    // 필사 시트를 골랐으면 그 모습을 보여 주는 편이 도움이 된다
+    var show = idx.length > L.basePages ? idx[L.basePages] : 0;
     els.templatePreview.innerHTML = '';
-    els.templatePreview.appendChild(cv);
+    els.templatePreview.appendChild(HF.template.renderPage(L, show, 0.42));
   }
 
   function allPages(scale) {
     var L = state.layouts[state.scope];
-    var n = L.basePages + extraCount();
-    var out = [];
-    for (var i = 0; i < n; i++) out.push(HF.template.renderPage(L, i, scale));
-    return out;
+    return selectedPageIndexes().map(function (i) {
+      return HF.template.renderPage(L, i, scale);
+    });
   }
 
   function downloadPdf() {
@@ -251,14 +287,15 @@
     var L = currentLayout();
     var scope = state.photoScope || state.scope;
     els.pageStatus.innerHTML = '';
-    // 안 뽑기로 한 통글자 시트는 굳이 보여 주지 않는다 (올린 게 있으면 보여 준다)
-    var show = L.basePages + extraCount();
+    // 안 고른 필사 시트는 굳이 보여 주지 않는다 (올린 게 있으면 보여 준다)
+    var show = {};
+    selectedPageIndexes().forEach(function (i) { show[i] = true; });
     L.pages.forEach(function (p, i) {
       var seen = state.seen[scope + ':' + i];
-      if (i >= show && !seen) return;
+      if (!show[i] && !seen) return;
       var d = document.createElement('div');
-      d.className = 'page-chip ' + (seen ? 'done' : '') + (p.kind === 'syllable' ? ' extra' : '');
-      d.textContent = (i + 1) + '쪽' + (p.kind === 'syllable' ? ' 통글자' : '');
+      d.className = 'page-chip ' + (seen ? 'done' : '') + (p.kind === 'passage' ? ' extra' : '');
+      d.textContent = (i + 1) + '쪽' + (p.passage ? ' ' + p.passage.title : '');
       els.pageStatus.appendChild(d);
     });
     var n = Object.keys(state.collected).length;
@@ -341,7 +378,7 @@
     var rows = [
       ['영문 · 숫자 · 기호', r.latin + ' / 94자'],
       ['한글 자모', r.jamo + ' / 86개'],
-      ['통글자로 직접 쓴 한글', r.written + '자'],
+      ['필사로 직접 쓴 한글', r.written + '자'],
       ['자모로 조합한 한글', r.syllables.toLocaleString() + '자'],
       ['한글 전체', (r.written + r.syllables).toLocaleString() + ' / ' +
                     HF.hangul.COUNT.toLocaleString() + '자'],

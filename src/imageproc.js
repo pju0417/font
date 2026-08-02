@@ -354,7 +354,10 @@
 
   function extractCells(warped, layout, page) {
     var s = warped.scale;
-    return page.cells.map(function (cell) {
+    // 문장부호 칸은 글이 읽히도록 종이에만 있고 폰트에는 쓰이지 않는다
+    return page.cells.filter(function (cell) {
+      return cell.kind !== 'mark';
+    }).map(function (cell) {
       var crop = cropBlue(warped, cell.writeRect, s);
       var bin = binarizeCell(crop);
       var cleaned = bin.empty ? { mask: bin.mask, ink: 0 } : cleanCell(bin.mask, crop.w, crop.h);

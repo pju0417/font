@@ -36,7 +36,16 @@
       ctx.rotate((r() - 0.5) * 0.09);
       ctx.translate(-cx + (r() - 0.5) * 6, -cy + (r() - 0.5) * 6);
 
-      if (cell.guide) {
+      if (cell.kind === 'mark') {
+        ctx.font = '600 ' + Math.round(wr[3] * 0.6) + 'px "Malgun Gothic",sans-serif';
+        var mm = ctx.measureText(cell.hint);
+        ctx.fillText(cell.hint,
+          wr[0] + (wr[2] - (mm.actualBoundingBoxLeft + mm.actualBoundingBoxRight)) / 2 +
+          mm.actualBoundingBoxLeft, wr[1] + wr[3] * 0.8);
+      } else if (cell.kind === 'syllable') {
+        fitText(ctx, cell.hint,
+          [wr[0] + wr[2] * 0.04, wr[1] + wr[3] * 0.04, wr[2] * 0.92, wr[3] * 0.92], 'syllable');
+      } else if (cell.guide) {
         var g = cell.guide, pad = 0.04;
         fitText(ctx, cell.hint,
           [wr[0] + (g[0] + g[2] * pad) * wr[2], wr[1] + (g[1] + g[3] * pad) * wr[3],

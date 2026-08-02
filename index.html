@@ -29,10 +29,14 @@
         <option value="full">영문 + 한글 전체 (180칸)</option>
       </select>
     </label>
-    <label id="extraLabel">
-      통글자 시트 (선택)
-      <select id="extraSheets"></select>
-    </label>
+  </div>
+
+  <div id="passageBox">
+    <div class="passage-head">
+      <b>필사 시트 (선택)</b>
+      <span class="sub">옮겨 쓸 글을 고르세요. 여러 개를 골라도 됩니다.</span>
+    </div>
+    <div id="passageList" class="passage-list"></div>
   </div>
 
   <div class="row">
@@ -47,12 +51,13 @@
   </div>
 
   <div class="callout" id="extraNote">
-    <b>통글자 시트란?</b>
+    <b>필사 시트란?</b>
     기본 시트는 자모를 조합해 한글 11,172자를 만듭니다. 빠짐없이 만들어 주지만 조금 기계적입니다.
-    통글자 시트는 <b>자주 쓰는 글자를 한 칸에 하나씩 통째로</b> 씁니다.
-    그 글자들은 조합 대신 손으로 쓴 모양이 그대로 쓰이고, <code>값</code> <code>앉</code>
-    <code>읊</code> 처럼 받침이 있는 진짜 글자를 직접 쓸 수 있습니다.
-    <span class="sub">안 써도 됩니다. 쓴 만큼만 좋아지고, 나머지는 조합이 채웁니다.</span>
+    필사 시트는 시나 옛글을 <b>원고지처럼 한 칸에 한 자씩</b> 옮겨 씁니다.
+    거기 나온 글자는 조합 대신 손으로 쓴 모양이 그대로 쓰이고,
+    <code>값</code> <code>앉</code> <code>읊</code> 처럼 받침이 있는 글자를 자연스럽게 쓰게 됩니다.
+    <span class="sub">안 써도 됩니다. 쓴 만큼만 좋아지고, 나머지는 조합이 채웁니다.
+      학생과 함께 만든다면 필사 자체가 공부가 됩니다.</span>
   </div>
 
   <p class="note">인쇄할 종이: <b id="sheetCount">—</b></p>
@@ -158,7 +163,7 @@
 </footer>
 
 <script src="src/hangul.js"></script>
-<script src="src/syllables.js"></script>
+<script src="src/passages.js"></script>
 <script src="src/charset.js"></script>
 <script src="src/layout.js"></script>
 <script src="src/trace.js"></script>

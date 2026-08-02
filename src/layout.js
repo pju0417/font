@@ -17,11 +17,13 @@
   var FID_SIZE = 60;      // 모서리 검은 사각형 한 변
   var FID_MARGIN = 70;    // 종이 가장자리에서 안쪽으로
 
-  var CODE_X = 150, CODE_Y = 200, CODE_SIZE = 28, CODE_STEP = 42, CODE_BITS = 8;
+  var CODE_X = 150, CODE_Y = 200, CODE_SIZE = 28, CODE_STEP = 42, CODE_BITS = 12;
 
   var GRID_TOP = 270, GRID_BOTTOM = 1600, GRID_LEFT = 150, GRID_RIGHT = 1090;
-  var COLS = 6, ROWS = 8, GAP = 16;
-  var PER_PAGE = COLS * ROWS;   // 48칸
+  var GAP = 16;
+  var COLS = 6, ROWS = 8;                 // 기본 시트: 큼직하게 48칸
+  var PASSAGE_COLS = 8, PASSAGE_ROWS = 11; // 필사 시트: 원고지처럼 88칸
+  var PER_PAGE = COLS * ROWS;
 
   /* 한글 칸: 잘라내는 영역이 곧 '음절 사각형'이다. */
   var CELL_INSET = 12;
@@ -58,34 +60,36 @@
     return boxes;
   }
 
-  /* 쪽 번호와 문자셋을 8비트로 인코딩한다.
-   * bit0-3: 쪽 번호(0-15), bit4-5: 문자셋, bit6-7: 앞 6비트 1의 개수 % 4
-   * → 뒤집혀 찍힌 사진을 걸러내는 검사값 역할을 한다. */
+  /* 쪽 번호와 문자셋을 12비트로 인코딩한다.
+   * bit0-5: 쪽 번호(0-63), bit6-7: 문자셋, bit8-11: 앞 8비트 1의 개수 % 16
+   * 검사값은 뒤집혀 찍힌 사진이나 잘못 읽은 코드를 걸러낸다. */
   function encodeCode(pageIndex, scope) {
-    var low = (pageIndex & 0x0F) | ((SCOPE_ID[scope] & 0x03) << 4);
-    var ones = 0;
-    for (var i = 0; i < 6; i++) if (low & (1 << i)) ones++;
-    return low | ((ones & 0x03) << 6);
+    var low = (pageIndex & 0x3F) | ((SCOPE_ID[scope] & 0x03) << 6);
+    return low | ((countBits(low) & 0x0F) << 8);
   }
 
-  function decodeCode(byte) {
-    var low = byte & 0x3F;
-    var ones = 0;
-    for (var i = 0; i < 6; i++) if (low & (1 << i)) ones++;
-    if (((byte >> 6) & 0x03) !== (ones & 0x03)) return null;   // 검사값 불일치
-    var scopeId = (low >> 4) & 0x03;
+  function decodeCode(value) {
+    var low = value & 0xFF;
+    if (((value >> 8) & 0x0F) !== (countBits(low) & 0x0F)) return null;
+    var scopeId = (low >> 6) & 0x03;
     var scope = null;
     for (var k in SCOPE_ID) if (SCOPE_ID[k] === scopeId) scope = k;
     if (!scope) return null;
-    return { pageIndex: low & 0x0F, scope: scope };
+    return { pageIndex: low & 0x3F, scope: scope };
   }
 
-  function cellRects() {
-    var cw = Math.floor((GRID_RIGHT - GRID_LEFT - GAP * (COLS - 1)) / COLS);
-    var ch = Math.floor((GRID_BOTTOM - GRID_TOP - GAP * (ROWS - 1)) / ROWS);
+  function countBits(v) {
+    var n = 0;
+    for (var i = 0; i < 8; i++) if (v & (1 << i)) n++;
+    return n;
+  }
+
+  function cellRects(cols, rows) {
+    var cw = Math.floor((GRID_RIGHT - GRID_LEFT - GAP * (cols - 1)) / cols);
+    var ch = Math.floor((GRID_BOTTOM - GRID_TOP - GAP * (rows - 1)) / rows);
     var rects = [];
-    for (var r = 0; r < ROWS; r++) {
-      for (var c = 0; c < COLS; c++) {
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
         rects.push([GRID_LEFT + c * (cw + GAP), GRID_TOP + r * (ch + GAP), cw, ch]);
       }
     }
@@ -117,31 +121,37 @@
    * '기본 몇 장, 추가 몇 장'이 흐려지고, 통글자 시트를 안 뽑은 사람도
    * 마지막 기본 시트에 통글자가 딸려 나온다. */
   function build(scope) {
-    var rects = cellRects();
+    var baseRects = cellRects(COLS, ROWS);
+    var passageRects = cellRects(PASSAGE_COLS, PASSAGE_ROWS);
     var pages = [];
 
-    function paginate(cells, kind) {
-      for (var p = 0; p * PER_PAGE < cells.length; p++) {
-        var slice = cells.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
-        var index = pages.length;
-        pages.push({
-          index: index, kind: kind, code: encodeCode(index, scope),
-          cells: slice.map(function (cell, i) { return place(cell, rects[i]); })
-        });
-      }
-    }
-
     var base = HF.charset.build(scope);
-    var extra = scope === 'full' ? HF.charset.buildSyllables() : [];
-    paginate(base, 'base');
-    paginate(extra, 'syllable');
+    for (var p = 0; p * PER_PAGE < base.length; p++) {
+      var slice = base.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+      pages.push({
+        index: pages.length, kind: 'base', code: encodeCode(pages.length, scope),
+        cells: slice.map(function (cell, i) { return place(cell, baseRects[i]); })
+      });
+    }
+    var basePages = pages.length;
 
-    /* 쪽 번호는 종이에 4비트로 인쇄된다. 목록을 늘리다 16쪽을 넘기면
-     * 17쪽이 1쪽으로 읽혀 엉뚱한 글자에 붙는데 오류가 나지 않는다.
+    // 필사 시트: 글이 원고지처럼 자리를 잡으므로 칸 위치를 charset 이 정해 준다
+    var passagePages = scope === 'full'
+      ? HF.charset.buildPassagePages(PASSAGE_COLS, PASSAGE_ROWS) : [];
+    passagePages.forEach(function (pg) {
+      pages.push({
+        index: pages.length, kind: 'passage', code: encodeCode(pages.length, scope),
+        passage: pg.passage, part: pg.part, parts: pg.parts,
+        cells: pg.cells.map(function (cell) { return place(cell, passageRects[cell.slot]); })
+      });
+    });
+
+    /* 쪽 번호는 종이에 6비트로 인쇄된다. 글을 늘리다 64쪽을 넘기면
+     * 65쪽이 1쪽으로 읽혀 엉뚱한 글자에 붙는데 오류가 나지 않는다.
      * 그런 일이 조용히 벌어지지 않도록 여기서 막는다. */
-    if (pages.length > 16) {
-      throw new Error('쪽 수가 16을 넘었습니다(' + pages.length + '쪽). ' +
-                      'syllables.js 의 목록을 줄이거나 쪽 번호 비트를 늘려야 합니다.');
+    if (pages.length > 64) {
+      throw new Error('쪽 수가 64를 넘었습니다(' + pages.length + '쪽). ' +
+                      'passages.js 의 글을 줄이거나 쪽 번호 비트를 늘려야 합니다.');
     }
 
     return {
@@ -149,9 +159,11 @@
       fiducials: fiducials(), fiducialSize: FID_SIZE,
       codeBoxes: codeBoxes(), codeBits: CODE_BITS,
       perPage: PER_PAGE, pages: pages,
-      basePages: Math.ceil(base.length / PER_PAGE),
-      syllablePages: Math.ceil(extra.length / PER_PAGE),
-      totalCells: base.length + extra.length
+      // 글자가 없는 칸도 그려야 원고지처럼 보인다
+      passageRects: passageRects,
+      basePages: basePages,
+      passagePages: pages.length - basePages,
+      totalCells: pages.reduce(function (n, pg) { return n + pg.cells.length; }, 0)
     };
   }
 

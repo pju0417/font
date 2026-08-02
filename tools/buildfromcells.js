@@ -4,7 +4,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-['hangul', 'syllables', 'charset', 'layout', 'trace', 'ttf', 'fontbuild']
+['hangul', 'passages', 'charset', 'layout', 'trace', 'ttf', 'fontbuild']
   .forEach(m => require(path.join(__dirname, '..', 'src', m + '.js')));
 const HF = globalThis.HF;
 

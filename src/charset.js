@@ -66,15 +66,58 @@
     return cells;
   }
 
-  /* 통글자 칸: 음절 하나를 통째로 쓴다. 조합해 만든 글자보다 자연스럽고,
-   * 받침이 들어간 실제 글자를 손으로 직접 쓸 수 있다. */
-  function buildSyllables() {
-    return HF.syllables.list.map(function (cp) {
-      return {
-        key: 'S:' + hex4(cp), kind: 'syllable', unicode: cp,
-        hint: String.fromCharCode(cp), note: '', guide: null
-      };
+  /* 필사 시트: 글을 원고지처럼 한 칸에 한 자씩 놓는다.
+   *
+   * 글의 줄바꿈을 살리려고 칸을 순서대로 채우지 않고 자리(slot)를 직접 정한다.
+   * 그래야 종이가 시처럼 읽히고, 쓰는 사람이 지금 어디를 쓰는지 알 수 있다.
+   *
+   * 같은 글자가 여러 번 나와도 그대로 둔다. 글이 글답게 읽혀야 하고,
+   * 겹치는 칸은 더 진하게 쓴 쪽이 자동으로 뽑히므로 손해가 아니다.
+   * 띄어쓰기는 빈 칸으로 두고, 문장부호는 그려만 두고 글자로는 걷지 않는다. */
+  function buildPassagePages(cols, rows) {
+    var pages = [];
+
+    HF.passages.list.forEach(function (passage) {
+      var made = [];
+      var cells = [], row = 0, col = 0;
+
+      function flush() {
+        if (cells.length) made.push(cells);
+        cells = []; row = 0; col = 0;
+      }
+      function newline() {
+        col = 0; row++;
+        if (row >= rows) flush();
+      }
+
+      passage.lines.forEach(function (line) {
+        for (var i = 0; i < line.length; i++) {
+          if (col >= cols) newline();
+          if (row >= rows) flush();
+          var ch = line.charAt(i);
+          var cp = line.charCodeAt(i);
+          if (ch !== ' ') {
+            var hangul = cp >= 0xAC00 && cp <= 0xD7A3;
+            cells.push({
+              // 같은 글자가 여러 번 나오면 키가 같아 더 진한 쪽이 선택된다
+              key: hangul ? 'S:' + hex4(cp) : 'M:' + hex4(cp),
+              kind: hangul ? 'syllable' : 'mark',
+              unicode: cp, hint: ch, note: '', guide: null,
+              slot: row * cols + col
+            });
+          }
+          col++;
+        }
+        newline();
+      });
+      flush();
+
+      made.forEach(function (c, i) {
+        pages.push({ passage: passage, part: i + 1, parts: made.length, cells: c });
+      });
     });
+
+    return pages;
   }
 
   function hex4(n) {
@@ -92,7 +135,7 @@
 
   HF.charset = {
     build: build,
-    buildSyllables: buildSyllables,
+    buildPassagePages: buildPassagePages,
     hex4: hex4,
     SCOPES: {
       latin: { label: '영문 · 숫자 · 기호', count: 94 },

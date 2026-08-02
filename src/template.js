@@ -68,19 +68,38 @@
     // --- 머리말 ---
     ctx.fillStyle = C_TEXT;
     ctx.font = f(30, 'bold');
-    ctx.fillText('손글씨 폰트 양식', 150, 130);
+    ctx.fillText(page.passage ? page.passage.title : '손글씨 폰트 양식', 150, 130);
+    if (page.passage) {
+      var w = ctx.measureText(page.passage.title).width;
+      ctx.font = f(20);
+      ctx.fillStyle = C_NOTE;
+      ctx.fillText(page.passage.author +
+        (page.parts > 1 ? '   (' + page.part + '/' + page.parts + ')' : ''), 150 + w + 16, 130);
+      ctx.fillStyle = C_TEXT;
+    }
     ctx.font = f(20);
     ctx.fillText({
       latin: '연한 파란 글자를 따라 검은 펜으로 쓰세요. 굵은 밑선에 글자를 앉히고, 소문자는 중간선까지.',
       jamo: '연한 파란 글자를 따라 검은 펜으로 쓰세요. 파란 영역을 채우듯이, 십자선을 기준 삼아.',
-      syllable: '연한 파란 글자를 따라 검은 펜으로 쓰세요. 십자선을 기준으로 칸을 고르게 채우듯이.'
+      passage: '원고지처럼 한 칸에 한 자씩, 연한 글자를 따라 검은 펜으로 옮겨 쓰세요.'
     }[meta.scope], 150, 168);
     ctx.font = f(22, 'bold');
-    ctx.fillText((page.index + 1) + ' / ' + meta.totalPages + ' 쪽', 560, 222);
+    ctx.fillText((page.index + 1) + ' / ' + meta.totalPages + ' 쪽', 700, 222);
     ctx.font = f(18);
-    ctx.fillText(meta.scopeLabel, 665, 222);
+    ctx.fillStyle = C_NOTE;
+    ctx.fillText(meta.scopeLabel, 805, 222);
+    ctx.fillStyle = C_TEXT;
 
     // --- 칸 ---
+    if (page.kind === 'passage') {
+      // 빈 칸(띄어쓰기·줄 끝)도 테두리만 그려 원고지처럼 보이게 한다
+      ctx.strokeStyle = C_LINE;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      layout.passageRects.forEach(function (r) {
+        ctx.strokeRect(r[0] + 0.5, r[1] + 0.5, r[2] - 1, r[3] - 1);
+      });
+    }
     page.cells.forEach(function (cell) {
       drawCell(ctx, cell);
     });
@@ -96,8 +115,19 @@
     var r = cell.rect, wr = cell.writeRect;
 
     // 자모 칸: 어느 위치·크기로 써야 하는지 옅은 배경으로 알려 준다
-    if (cell.kind === 'syllable') {
-      // 통글자 칸: 칸 전체가 글자 하나의 자리다. 십자선만 기준으로 준다.
+    if (cell.kind === 'mark') {
+      /* 문장부호. 글이 글답게 읽히도록 자리를 잡아 주되, 칸에 맞춰 늘이지 않는다.
+       * 쉼표를 칸만큼 키우면 커다란 덩어리가 되어 버린다.
+       * 폰트에는 쓰이지 않는다(문장부호는 영문 시트에서 이미 받았다). */
+      drawQuadrants(ctx, wr);
+      ctx.fillStyle = C_HINT;
+      ctx.font = f(Math.round(wr[3] * 0.6));
+      var mm = ctx.measureText(cell.hint);
+      var mw = mm.actualBoundingBoxLeft + mm.actualBoundingBoxRight;
+      ctx.fillText(cell.hint, wr[0] + (wr[2] - mw) / 2 + mm.actualBoundingBoxLeft,
+                   wr[1] + wr[3] * 0.8);
+    } else if (cell.kind === 'syllable') {
+      // 글자 한 자가 통째로 들어가는 칸. 십자선만 기준으로 준다.
       drawQuadrants(ctx, wr);
       ctx.fillStyle = C_HINT;
       fitText(ctx, cell.hint, 200,
@@ -221,12 +251,12 @@
     var ctx = cv.getContext('2d');
     ctx.scale(scale, scale);
     var page = layout.pages[pageIndex];
-    var first = page.cells[0];
     drawPage(ctx, layout, page, {
       totalPages: layout.pages.length,
-      scope: first.kind === 'latin' ? 'latin' : (first.kind === 'syllable' ? 'syllable' : 'jamo'),
-      scopeLabel: page.kind === 'syllable'
-        ? '통글자 시트 (선택)'
+      scope: page.kind === 'passage' ? 'passage'
+           : (page.cells[0].kind === 'latin' ? 'latin' : 'jamo'),
+      scopeLabel: page.kind === 'passage'
+        ? '필사 시트 (선택)'
         : HF.charset.SCOPES[layout.scope].label
     });
     return cv;
