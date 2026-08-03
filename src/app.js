@@ -10,7 +10,8 @@
     seen: {},              // 'full:0' 같은 키 → true
     photoScope: null,      // 사진에서 읽어 낸 문자셋
     font: null,
-    previewSeq: 0
+    previewSeq: 0,
+    step: 1
   };
 
   var $ = function (id) { return document.getElementById(id); };
@@ -22,8 +23,11 @@
      'previewText', 'previewBox', 'previewSize', 'downloadBtn', 'reportBox',
      'pdfBtn', 'pngBtn', 'templatePreview', 'sheetCount', 'resetBtn', 'installHelp',
      'passageBox', 'passageList', 'extraNote', 'qualityPanel', 'recommendPanel',
-     'previewPanel', 'previewHint', 'previewMeta', 'previewPages']
+     'previewPanel', 'previewHint', 'previewMeta', 'previewPages',
+     'stepNav', 'sheetCount2']
       .forEach(function (id) { els[id] = $(id); });
+
+    initSteps();
 
     buildPassageList();
     els.scope.value = localStorage.getItem('hf.scope') || 'full';
@@ -63,6 +67,30 @@
 
     onScopeChange();
     updatePageStatus();
+  }
+
+  // ---------- 3단계 길잡이 ----------
+
+  /* 한 번에 한 단계만 보여 준다. 세 단계를 한 화면에 쌓으면
+   * 활동지 목록만으로도 스크롤이 너무 길어진다. */
+  function initSteps() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) {
+      b.addEventListener('click', function () { goStep(+b.dataset.go); });
+    });
+    goStep(1);
+  }
+
+  function goStep(n) {
+    state.step = n;
+    Array.prototype.forEach.call(document.querySelectorAll('.step-panel'), function (s) {
+      s.hidden = +s.dataset.step !== n;
+    });
+    Array.prototype.forEach.call(els.stepNav.querySelectorAll('button'), function (b) {
+      var i = +b.dataset.go;
+      b.setAttribute('aria-current', i === n ? 'true' : 'false');
+      b.classList.toggle('done', i < n);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function remember() {
@@ -160,8 +188,10 @@
     var idx = selectedPageIndexes();
     var cells = idx.reduce(function (n, i) { return n + L.pages[i].cells.length; }, 0);
     var extra = idx.length - L.basePages;
-    els.sheetCount.textContent = idx.length + '장 (' + cells + '칸)' +
+    var summary = idx.length + '장 (' + cells + '칸)' +
       (extra > 0 ? ' · 기본 ' + L.basePages + '장 + 활동지 ' + extra + '장' : '');
+    els.sheetCount.textContent = summary;
+    els.sheetCount2.textContent = summary;
     showTemplatePreview();
     updateQuality();
     updatePageStatus();

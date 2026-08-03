@@ -36,6 +36,32 @@ header p { margin: 6px 0; color: var(--muted); }
   padding: 5px 14px; font-size: 14px;
 }
 
+/* 3단계 길잡이. 한 번에 한 단계만 보여 세로 스크롤을 짧게 유지한다.
+ * 단계 사이는 언제든 오갈 수 있게 눌러서 이동한다. */
+.steps {
+  max-width: 1360px; margin: 22px auto 0; padding: 0 24px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.steps button {
+  flex: 1 1 200px; display: flex; align-items: center; gap: 9px;
+  padding: 11px 16px; font-weight: 600; color: var(--muted);
+  background: var(--card); border: 1px solid var(--line);
+}
+.steps button b {
+  display: grid; place-items: center; width: 24px; height: 24px;
+  border-radius: 50%; background: #e8ecf1; color: var(--muted); font-size: 13px;
+}
+.steps button[aria-current="true"] { color: var(--ink); border-color: var(--brand); }
+.steps button[aria-current="true"] b { background: var(--brand); color: #fff; }
+.steps button.done b { background: var(--good); color: #fff; }
+
+.step-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line);
+}
+.step-foot .note { margin: 0; }
+
 section {
   background: var(--card);
   border: 1px solid var(--line);
@@ -109,7 +135,20 @@ button:disabled { opacity: .5; cursor: default; }
 
 /* 활동지 고르기: 왼쪽에 목록, 오른쪽에 완성도·추천·미리보기 */
 .ws-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start; }
-.ws-side { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 16px; }
+
+/* 옆 패널은 화면에 붙어 따라다니되, 내용이 길면 '패널만' 따로 굴린다.
+ * 그러지 않으면 미리보기가 화면 아래로 잘려 목록 끝까지 내려가야 보인다. */
+.ws-side {
+  display: flex; flex-direction: column; gap: 12px;
+  position: sticky; top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+.ws-side::-webkit-scrollbar { width: 8px; }
+.ws-side::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+.ws-side::-webkit-scrollbar-track { background: transparent; }
 .panel {
   border: 1px solid var(--line); border-radius: 11px; padding: 14px 16px; background: #fbfcfe;
 }
@@ -254,6 +293,10 @@ footer { padding: 26px 20px 50px; color: var(--muted); font-size: 14px; text-ali
   .passage { background: #171b21; }
   .passage:has(input:checked) { background: #1c2431; }
   .panel { background: #171b21; }
+  .steps button { background: var(--card); }
+  .steps button b { background: #2c333d; }
+  .steps button[aria-current="true"] b { color: #0d1117; }
+  .steps button.done b { color: #0d1117; }
   .score-bar { background: #2c333d; }
   .score-tag.best { background: #13291f; color: #6cd6a5; }
   .score-tag.good { background: #172236; color: #7aa7ff; }

@@ -16,10 +16,16 @@
   <p class="privacy">🔒 사진은 이 브라우저 안에서만 처리됩니다. 서버로 올라가지 않습니다.</p>
 </header>
 
+<nav class="steps" id="stepNav">
+  <button type="button" data-go="1"><b>1</b> 활동지 고르기</button>
+  <button type="button" data-go="2"><b>2</b> 인쇄하고 올리기</button>
+  <button type="button" data-go="3"><b>3</b> 폰트 만들기</button>
+</nav>
+
 <main>
 
-<section>
-  <h2><span class="step">1</span> 양식을 인쇄합니다</h2>
+<section class="step-panel" data-step="1">
+  <h2><span class="step">1</span> 활동지를 고릅니다</h2>
 
   <div class="row">
     <label>
@@ -58,28 +64,26 @@
     </p>
   </div>
 
-  <div class="row">
-    <label>
-      폰트 이름 (영문)
-      <input id="familyName" type="text" placeholder="My Handwriting" spellcheck="false">
-    </label>
-    <label>
-      폰트 이름 (한글)
-      <input id="familyNameKo" type="text" placeholder="내손글씨">
-    </label>
-  </div>
-
   <div class="callout" id="extraNote">
-    <b>필사 시트란?</b>
+    <b>활동지란?</b>
     기본 시트는 자모를 조합해 한글 11,172자를 만듭니다. 빠짐없이 만들어 주지만 조금 기계적입니다.
-    필사 시트는 시나 옛글을 <b>원고지처럼 한 칸에 한 자씩</b> 옮겨 씁니다.
+    활동지는 시나 옛글, 교과 개념 문장을 <b>원고지처럼 한 칸에 한 자씩</b> 옮겨 씁니다.
     거기 나온 글자는 조합 대신 손으로 쓴 모양이 그대로 쓰이고,
     <code>값</code> <code>앉</code> <code>읊</code> 처럼 받침이 있는 글자를 자연스럽게 쓰게 됩니다.
     <span class="sub">안 써도 됩니다. 쓴 만큼만 좋아지고, 나머지는 조합이 채웁니다.
-      학생과 함께 만든다면 필사 자체가 공부가 됩니다.</span>
+      학생과 함께 만든다면 활동지 자체가 공부가 됩니다.</span>
   </div>
 
-  <p class="note">인쇄할 종이: <b id="sheetCount">—</b></p>
+  <div class="step-foot">
+    <p class="note">인쇄할 종이: <b id="sheetCount">—</b></p>
+    <button type="button" class="primary" data-go="2">다음 · 인쇄하고 올리기 →</button>
+  </div>
+</section>
+
+<section class="step-panel" data-step="2" hidden>
+  <h2><span class="step">2</span> 인쇄해서 쓰고, 사진을 올립니다</h2>
+
+  <p class="note">고른 종이: <b id="sheetCount2">—</b></p>
 
   <div class="actions">
     <button id="pdfBtn" class="primary">PDF 내려받기</button>
@@ -99,10 +103,6 @@
       <li>연필은 너무 흐려서 잘 인식되지 않습니다.</li>
     </ul>
   </div>
-</section>
-
-<section>
-  <h2><span class="step">2</span> 사진을 올립니다</h2>
 
   <div id="dropZone" class="drop">
     <div class="drop-icon">📷</div>
@@ -129,13 +129,26 @@
 
   <div id="pageStatus" class="page-status"></div>
   <ul id="photoLog" class="photo-log"></ul>
-  <div class="actions">
+
+  <div class="step-foot">
     <button id="resetBtn" class="ghost" disabled>올린 결과 지우기</button>
+    <button type="button" class="primary" data-go="3">다음 · 폰트 만들기 →</button>
   </div>
 </section>
 
-<section>
-  <h2><span class="step">3</span> 폰트를 만듭니다</h2>
+<section class="step-panel" data-step="3" hidden>
+  <h2><span class="step">3</span> 폰트를 만들어 내려받습니다</h2>
+
+  <div class="row">
+    <label>
+      폰트 이름 (영문)
+      <input id="familyName" type="text" placeholder="My Handwriting" spellcheck="false">
+    </label>
+    <label>
+      폰트 이름 (한글)
+      <input id="familyNameKo" type="text" placeholder="내손글씨">
+    </label>
+  </div>
 
   <div class="actions">
     <button id="buildBtn" class="primary big" disabled>먼저 사진을 올려 주세요</button>
