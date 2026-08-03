@@ -129,6 +129,11 @@
       done++;
       if (onProgress && done % 12 === 0) onProgress(0.15 + 0.45 * done / keys.length, '획 따는 중');
 
+      /* 문장부호·알파벳 칸과 자유 응답 칸은 종이에만 있고 폰트로 걷지 않는다.
+       * 사진 처리 단계에서 이미 걸러 내지만, 여기서도 막아 두어야
+       * 다른 경로로 들어와도 엉뚱한 글리프가 생기지 않는다. */
+      if (cell.kind === 'mark') return;
+
       var contours = traceCell(cell, traceOpts);
       if (!contours) {
         report.glyphs[key] = { status: cell.status === 'empty' ? 'empty' : 'failed', hint: cell.hint };

@@ -66,28 +66,48 @@
     });
 
     // --- 머리말 ---
+    var ps = page.passage;
     ctx.fillStyle = C_TEXT;
     ctx.font = f(30, 'bold');
-    ctx.fillText(page.passage ? page.passage.title : '손글씨 폰트 양식', 150, 130);
-    if (page.passage) {
-      var w = ctx.measureText(page.passage.title).width;
-      ctx.font = f(20);
+    ctx.fillText(ps ? ps.title : '손글씨 폰트 양식', 150, 128);
+    if (ps) {
+      var w = ctx.measureText(ps.title).width;
+      ctx.font = f(19);
       ctx.fillStyle = C_NOTE;
-      ctx.fillText(page.passage.author +
-        (page.parts > 1 ? '   (' + page.part + '/' + page.parts + ')' : ''), 150 + w + 16, 130);
+      var by = (ps.author ? ps.author + '  ' : '') +
+               HF.passages.SOURCE_TYPES[ps.sourceType].short +
+               (page.parts > 1 ? '  (' + page.part + '/' + page.parts + ')' : '');
+      ctx.fillText(by, 150 + w + 16, 128);
+      // 이름·날짜 칸
       ctx.fillStyle = C_TEXT;
+      ctx.font = f(17);
+      ctx.fillText('이름', 760, 128);
+      ctx.fillText('날짜', 950, 128);
+      dash(ctx, 800, 134, 930, 134, [], 1);
+      dash(ctx, 990, 134, 1090, 134, [], 1);
     }
-    ctx.font = f(20);
-    ctx.fillText({
+
+    ctx.fillStyle = C_TEXT;
+    ctx.font = f(19);
+    ctx.fillText(ps && ps.learningGoal ? '오늘의 목표 · ' + ps.learningGoal : {
       latin: '연한 파란 글자를 따라 검은 펜으로 쓰세요. 굵은 밑선에 글자를 앉히고, 소문자는 중간선까지.',
       jamo: '연한 파란 글자를 따라 검은 펜으로 쓰세요. 파란 영역을 채우듯이, 십자선을 기준 삼아.',
       passage: '원고지처럼 한 칸에 한 자씩, 연한 글자를 따라 검은 펜으로 옮겨 쓰세요.'
-    }[meta.scope], 150, 168);
-    ctx.font = f(22, 'bold');
-    ctx.fillText((page.index + 1) + ' / ' + meta.totalPages + ' 쪽', 700, 222);
-    ctx.font = f(18);
+    }[meta.scope], 150, 166);
+    if (ps) {
+      ctx.fillStyle = C_NOTE;
+      ctx.font = f(17);
+      ctx.fillText('원고지처럼 한 칸에 한 자씩, 연한 글자를 따라 검은 펜으로 옮겨 쓰세요.', 150, 192);
+    }
+
+    ctx.fillStyle = C_TEXT;
+    ctx.font = f(21, 'bold');
+    var pageText = (page.index + 1) + ' / ' + meta.totalPages + ' 쪽';
+    ctx.fillText(pageText, 720, 222);
+    var pageW = ctx.measureText(pageText).width;
+    ctx.font = f(17);
     ctx.fillStyle = C_NOTE;
-    ctx.fillText(meta.scopeLabel, 805, 222);
+    ctx.fillText(meta.scopeLabel, 720 + pageW + 14, 222);
     ctx.fillStyle = C_TEXT;
 
     // --- 칸 ---
@@ -104,9 +124,12 @@
       drawCell(ctx, cell);
     });
 
+    // --- 생각 쓰기 자리 (활동지에만, 폰트 글자로 걷지 않는다) ---
+    if (page.passage) drawReflection(ctx, layout, page.passage);
+
     // --- 꼬리말 ---
     ctx.fillStyle = C_TEXT;
-    ctx.font = f(17);
+    ctx.font = f(16);
     ctx.fillText('A4 실제 크기(100%)로 인쇄 · 네 모서리 검은 사각형이 사진에 모두 보이게 촬영하세요.',
                  150, 1645);
   }
@@ -223,6 +246,38 @@
     dash(ctx, x0, bot, x1, bot, [3, 7], 1);                                // 아랫선
   }
 
+  /* 생각을 쓰는 자리.
+   *
+   * 필사 칸과 시각적으로 확실히 구분해야 한다. 필사 칸은 좌표가 정해진 '수집 영역'
+   * 이고 이곳은 자유 응답이라 폰트로 걷지 않는다. 그래서 네모 칸 대신 줄만 긋고
+   * 왼쪽에 굵은 세로 띠를 둔다. 흑백으로 인쇄해도 구분된다. */
+  function drawReflection(ctx, layout, passage) {
+    var r = layout.reflectRect;
+    ctx.save();
+    ctx.fillStyle = C_FILL;
+    ctx.fillRect(r[0], r[1], r[2], r[3]);
+    ctx.fillStyle = C_LINE;
+    ctx.fillRect(r[0], r[1], 6, r[3]);          // 왼쪽 띠
+
+    ctx.fillStyle = C_TEXT;
+    ctx.font = f(18, 'bold');
+    ctx.fillText('생각 쓰기', r[0] + 22, r[1] + 30);
+    ctx.fillStyle = C_NOTE;
+    ctx.font = f(16);
+    ctx.fillText('이 칸은 폰트로 만들어지지 않습니다', r[0] + 130, r[1] + 30);
+
+    if (passage.reflectionPrompt) {
+      ctx.fillStyle = C_TEXT;
+      ctx.font = f(17);
+      ctx.fillText(passage.reflectionPrompt, r[0] + 22, r[1] + 58);
+    }
+    for (var i = 0; i < 2; i++) {
+      var y = r[1] + 88 + i * 32;
+      dash(ctx, r[0] + 22, y, r[0] + r[2] - 16, y, [5, 5], 1);
+    }
+    ctx.restore();
+  }
+
   /* 한글 칸을 십자로 4등분한다.
    * 칸 전체가 '음절 사각형'이고, 파란 영역은 그 안에서 이 자모가 차지하는 자리다.
    * 십자선이 있으면 자모가 음절의 어디쯤 앉는지 눈으로 가늠하기 쉬워진다. */
@@ -256,7 +311,7 @@
       scope: page.kind === 'passage' ? 'passage'
            : (page.cells[0].kind === 'latin' ? 'latin' : 'jamo'),
       scopeLabel: page.kind === 'passage'
-        ? '필사 시트 (선택)'
+        ? '활동지'
         : HF.charset.SCOPES[layout.scope].label
     });
     return cv;

@@ -4,9 +4,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-['hangul', 'passages', 'charset', 'layout', 'trace', 'ttf', 'fontbuild']
-  .forEach(m => require(path.join(__dirname, '..', 'src', m + '.js')));
-const HF = globalThis.HF;
+const HF = require('./load')();
 
 function readCells(binPath) {
   const buf = fs.readFileSync(binPath);

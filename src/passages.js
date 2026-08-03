@@ -1,16 +1,23 @@
-/* 필사 시트에 실을 글.
+/* 활동지 콘텐츠 등록소.
  *
- * 낱글자를 나열하면 쓰는 사람이 지친다. 읽을 가치가 있는 글을 원고지처럼
- * 한 칸에 한 자씩 옮겨 쓰게 하면, 필사 자체가 남는 일이 되면서
- * 폰트에 필요한 글자 데이터도 함께 모인다.
+ * 실제 글은 src/data/*.js 에 나뉘어 있고, 각 파일이 여기에 register() 로 넣는다.
+ * 화면 코드에는 글을 하나도 두지 않는다.
  *
- * 고른 기준
- *  - 저작권이 지난 글만 쓴다 (지은이 사후 70년이 지난 작품, 옛 문헌, 속담)
- *  - 교과서에서 만나는 작품 위주로 골라 학생이 써도 공부가 되게 한다
- *  - 짧은 글부터 둔다. 한두 장만 써도 끝맺음이 되도록
- *
- * ⚠ 본문은 널리 알려진 판본을 옮긴 것이다. 학생에게 나눠 주기 전에
- *   원문을 한 번 확인하시길 권한다. 이 파일만 고치면 된다.
+ * 콘텐츠 한 건의 구조 (없는 항목은 아예 빼 둔다. null 이나 빈 문자열을 넣지 않는다)
+ *   id             문자열 열쇠. 종이의 쪽 번호와 이어지므로 한번 정하면 바꾸지 않는다
+ *   category       아래 CATEGORIES 의 id
+ *   title          활동지 제목
+ *   lines          본문. 한 줄이 원고지의 한 줄이 된다
+ *   sourceType     publicDomain | traditional | original | textbookReference
+ *   author         지은이 (있을 때만)
+ *   workTitle      작품명 (제목과 다를 때만)
+ *   sourceNote     출처·저작권 확인 메모
+ *   learningGoal   오늘의 필사 목표. 활동지 머리말에 인쇄된다
+ *   reflectionPrompt  생각 쓰기 물음. 활동지 아래쪽에 인쇄된다
+ *   difficulty     easy | normal | challenging
+ *   recommendedGrade  [6] 처럼 학년 배열
+ *   tags           검색·분류용 낱말
+ *   collect        false 면 폰트 글자로 걷지 않는다 (기본값 true)
  *
  * ⚠ 글을 고치면 '몇 쪽 몇 번 칸이 어떤 글자인지'가 달라진다.
  *   이미 인쇄해 둔 종이가 있으면 다시 뽑아야 한다.
@@ -19,156 +26,57 @@
   'use strict';
   var HF = root.HF = root.HF || {};
 
-  var LIST = [
-    {
-      id: 'hunmin',
-      title: '훈민정음 서문',
-      author: '세종대왕 · 1446년',
-      note: '한글이 왜 만들어졌는지가 담긴 글입니다.',
-      lines: [
-        '나라의 말이 중국과 달라',
-        '문자와 서로 통하지 아니하므로',
-        '이런 까닭으로 어리석은 백성이',
-        '이르고자 하는 바가 있어도',
-        '마침내 제 뜻을 능히 펴지',
-        '못하는 사람이 많으니라',
-        '내 이를 가엾이 여겨',
-        '새로 스물여덟 자를 만드노니',
-        '사람마다 쉬이 익혀',
-        '날마다 쓰기에 편안하게',
-        '하고자 할 따름이니라'
-      ]
-    },
-    {
-      id: 'seosi',
-      title: '서시',
-      author: '윤동주',
-      note: '',
-      lines: [
-        '죽는 날까지 하늘을 우러러',
-        '한 점 부끄럼이 없기를',
-        '잎새에 이는 바람에도',
-        '나는 괴로워했다',
-        '별을 노래하는 마음으로',
-        '모든 죽어 가는 것을 사랑해야지',
-        '그리고 나한테 주어진 길을',
-        '걸어가야겠다',
-        '',
-        '오늘 밤에도 별이 바람에 스치운다'
-      ]
-    },
-    {
-      id: 'hosu',
-      title: '호수',
-      author: '정지용',
-      note: '짧아서 한 장이면 끝납니다.',
-      lines: [
-        '얼굴 하나야',
-        '손바닥 둘로',
-        '폭 가리지만',
-        '',
-        '보고 싶은 마음',
-        '호수만 하니',
-        '눈 감을 밖에'
-      ]
-    },
-    {
-      id: 'jindallae',
-      title: '진달래꽃',
-      author: '김소월',
-      note: '',
-      lines: [
-        '나 보기가 역겨워',
-        '가실 때에는',
-        '말없이 고이 보내 드리오리다',
-        '',
-        '영변에 약산',
-        '진달래꽃',
-        '아름 따다 가실 길에 뿌리오리다',
-        '',
-        '가시는 걸음걸음',
-        '놓인 그 꽃을',
-        '사뿐히 즈려밟고 가시옵소서',
-        '',
-        '나 보기가 역겨워',
-        '가실 때에는',
-        '죽어도 아니 눈물 흘리오리다'
-      ]
-    },
-    {
-      id: 'narutbae',
-      title: '나룻배와 행인',
-      author: '한용운',
-      note: '',
-      lines: [
-        '나는 나룻배',
-        '당신은 행인',
-        '',
-        '당신은 흙발로 나를 짓밟습니다',
-        '나는 당신을 안고 물을 건너갑니다',
-        '나는 당신을 기다리면서',
-        '날마다 날마다 낡아 갑니다'
-      ]
-    },
-    {
-      id: 'cheongpodo',
-      title: '청포도',
-      author: '이육사',
-      note: '',
-      lines: [
-        '내 고장 칠월은',
-        '청포도가 익어 가는 시절',
-        '',
-        '이 마을 전설이 주저리주저리 열리고',
-        '먼 데 하늘이 꿈꾸며 알알이 들어와 박혀',
-        '',
-        '하늘 밑 푸른 바다가 가슴을 열고',
-        '흰 돛단배가 곱게 밀려서 오면'
-      ]
-    },
-    {
-      id: 'sokdam',
-      title: '속담 모음',
-      author: '예로부터 전해 오는 말',
-      note: '받침이 다양해서 글자 모으기에 특히 좋습니다.',
-      lines: [
-        '가는 말이 고와야 오는 말이 곱다',
-        '낮말은 새가 듣고 밤말은 쥐가 듣는다',
-        '티끌 모아 태산',
-        '백지장도 맞들면 낫다',
-        '열 번 찍어 아니 넘어가는 나무 없다',
-        '바늘 도둑이 소도둑 된다',
-        '등잔 밑이 어둡다',
-        '공든 탑이 무너지랴',
-        '소 잃고 외양간 고친다',
-        '호랑이도 제 말 하면 온다',
-        '싼 것이 비지떡',
-        '개구리 올챙이 적 생각 못 한다'
-      ]
-    },
-    {
-      id: 'myeongeon',
-      title: '배움에 관한 말',
-      author: '옛말과 격언',
-      note: '',
-      lines: [
-        '시작이 반이다',
-        '천 리 길도 한 걸음부터',
-        '아는 것이 힘이다',
-        '배움에는 끝이 없다',
-        '오늘 걷지 않으면',
-        '내일은 뛰어야 한다',
-        '젊어서 배우고 늙어서도 익힌다',
-        '묻는 것은 한때의 부끄러움이요',
-        '묻지 않는 것은 평생의 부끄러움이라'
-      ]
-    }
+  /* 학습 분야. 화면의 선택 목록 순서가 된다. */
+  var CATEGORIES = [
+    { id: 'classicLiterature', label: '고전 문학', hint: '저작권이 만료된 시와 시조' },
+    { id: 'proverbs', label: '속담과 격언', hint: '예로부터 전해 오는 말' },
+    { id: 'koreanLanguage', label: '국어', hint: '작품 읽기 · 주장과 근거 · 매체' },
+    { id: 'characterEducation', label: '인성교육', hint: '존중 · 책임 · 협력 · 디지털 시민성' },
+    { id: 'socialStudies', label: '사회 · 도덕', hint: '민주주의 · 세계 · 경제생활' },
+    { id: 'mathematics', label: '수학', hint: '비와 비율 · 도형 · 자료와 가능성' },
+    { id: 'science', label: '과학', hint: '지구와 달 · 빛 · 생태계 · 에너지' },
+    { id: 'practicalArts', label: '실과 · 정보', hint: '문제 해결 · 알고리즘 · 지속 가능한 생활' },
+    { id: 'englishVocabulary', label: '영어 단어', hint: '단어와 뜻을 함께 씁니다' },
+    { id: 'englishExpressions', label: '영어 표현', hint: '교육과정 의사소통 표현' },
+    { id: 'englishProverbs', label: '영어 속담', hint: '오래전부터 널리 쓰인 말' },
+    { id: 'custom', label: '글자 보완', hint: '까다로운 글자를 채우는 활동지' }
   ];
+
+  /* 자료 유형 표시. 활동지와 화면에서 고전 원문과 자체 제작 문장을 구분해 준다. */
+  var SOURCE_TYPES = {
+    publicDomain: { label: '저작권 만료 작품', short: '만료저작물' },
+    traditional: { label: '전해 오는 말', short: '전통' },
+    original: { label: '자체 제작 학습 문장', short: '자체 제작' },
+    textbookReference: { label: '교과서 안내', short: '교과서 참고' }
+  };
+
+  var LIST = [];
+  var seen = {};
+
+  function register(items) {
+    items.forEach(function (item) {
+      if (seen[item.id]) throw new Error('활동지 id 가 겹칩니다: ' + item.id);
+      seen[item.id] = true;
+      LIST.push(item);
+    });
+  }
 
   function byId(id) {
     for (var i = 0; i < LIST.length; i++) if (LIST[i].id === id) return LIST[i];
     return null;
   }
 
-  HF.passages = { list: LIST, byId: byId };
+  function byCategory(catId) {
+    return LIST.filter(function (p) { return p.category === catId; });
+  }
+
+  /* 이 글에서 폰트 글자를 걷는가 (기본은 걷는다) */
+  function collects(item) {
+    return item.collect !== false;
+  }
+
+  HF.passages = {
+    list: LIST, register: register, byId: byId, byCategory: byCategory,
+    collects: collects, CATEGORIES: CATEGORIES, SOURCE_TYPES: SOURCE_TYPES
+  };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

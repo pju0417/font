@@ -1,0 +1,197 @@
+/* 영어 단어와 뜻.
+ *
+ * 활동 방식: 단어 → 한글 뜻 → 단어 한 번 더 → 짧은 예문.
+ * 한글 뜻은 폰트 글자로 걷히고, 영문은 종이 연습용이다.
+ * (알파벳·숫자·문장부호는 기본 '영문 시트'에서 베이스라인과 함께 이미 걷는다.
+ *  네모 칸에서 걷으면 글자가 앉을 자리를 알 수 없어 폰트가 망가진다.)
+ *
+ * 뜻풀이는 일반적인 사전 뜻이며 특정 교재를 옮기지 않았다. */
+(function (root) {
+  'use strict';
+  root.HF.passages.register([
+    {
+      id: 'eng-voc-character',
+      category: 'englishVocabulary',
+      title: '영어 단어 — 성격과 가치',
+      sourceType: 'original',
+      learningGoal: '사람의 성품을 나타내는 낱말을 쓰며 익힙니다.',
+      reflectionPrompt: '나를 가장 잘 나타내는 단어를 고르고 그 까닭을 써 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [6],
+      tags: ['영어', '단어', '인성'],
+      lines: [
+        'kind 친절한 kind',
+        'She is kind to everyone.',
+        'honest 정직한 honest',
+        'Be honest with your friends.',
+        'brave 용감한 brave',
+        'The brave boy helped us.',
+        'careful 주의 깊은 careful',
+        'Be careful on the stairs.',
+        'helpful 도움이 되는 helpful',
+        'Your advice was helpful.'
+      ]
+    },
+    {
+      id: 'eng-voc-character2',
+      category: 'englishVocabulary',
+      title: '영어 단어 — 책임과 노력',
+      sourceType: 'original',
+      learningGoal: '가치를 나타내는 낱말을 쓰며 익힙니다.',
+      reflectionPrompt: '오늘 지키고 싶은 promise 를 영어와 한글로 써 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [6],
+      tags: ['영어', '단어', '가치'],
+      lines: [
+        'responsible 책임감 있는 responsible',
+        'We are responsible for our pets.',
+        'respect 존중하다 respect',
+        'We respect each other.',
+        'courage 용기 courage',
+        'It takes courage to say sorry.',
+        'effort 노력 effort',
+        'Your effort will pay off.',
+        'promise 약속 promise',
+        'I keep my promise.'
+      ]
+    },
+    {
+      id: 'eng-voc-school',
+      category: 'englishVocabulary',
+      title: '영어 단어 — 학교와 학습',
+      sourceType: 'original',
+      learningGoal: '학교 생활에서 자주 쓰는 낱말을 익힙니다.',
+      reflectionPrompt: '내가 가장 좋아하는 subject 를 영어로 써 보세요.',
+      difficulty: 'easy',
+      recommendedGrade: [6],
+      tags: ['영어', '단어', '학교'],
+      lines: [
+        'subject 과목 subject',
+        'Math is my favorite subject.',
+        'homework 숙제 homework',
+        'I do my homework at seven.',
+        'question 질문 question',
+        'May I ask a question?',
+        'answer 대답 answer',
+        'Your answer is correct.',
+        'library 도서관 library',
+        'We read books in the library.'
+      ]
+    },
+    {
+      id: 'eng-voc-school2',
+      category: 'englishVocabulary',
+      title: '영어 단어 — 배움의 낱말',
+      sourceType: 'original',
+      learningGoal: '학습과 관련된 동사를 쓰며 익힙니다.',
+      reflectionPrompt: '오늘 practice 하고 싶은 것을 써 보세요.',
+      difficulty: 'easy',
+      recommendedGrade: [6],
+      tags: ['영어', '단어', '학습'],
+      lines: [
+        'science 과학 science',
+        'We study science on Monday.',
+        'history 역사 history',
+        'History is interesting.',
+        'practice 연습하다 practice',
+        'I practice the piano every day.',
+        'understand 이해하다 understand',
+        'Now I understand the rule.',
+        'remember 기억하다 remember',
+        'Please remember my name.'
+      ]
+    },
+    {
+      id: 'eng-voc-life',
+      category: 'englishVocabulary',
+      title: '영어 단어 — 생활과 진로',
+      sourceType: 'original',
+      learningGoal: '꿈과 환경에 관한 낱말을 익힙니다.',
+      reflectionPrompt: '나의 dream 을 영어 한 문장으로 써 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [6],
+      tags: ['영어', '단어', '진로', '환경'],
+      lines: [
+        'future 미래 future',
+        'I think about my future.',
+        'dream 꿈 dream',
+        'My dream is to be a teacher.',
+        'job 직업 job',
+        'What job do you want?',
+        'travel 여행하다 travel',
+        'I want to travel to Jeju.',
+        'healthy 건강한 healthy',
+        'Eat healthy food every day.'
+      ]
+    },
+    {
+      id: 'eng-voc-earth',
+      category: 'englishVocabulary',
+      title: '영어 단어 — 환경과 선택',
+      sourceType: 'original',
+      learningGoal: '환경을 지키는 행동을 나타내는 낱말을 익힙니다.',
+      reflectionPrompt: '오늘 protect 하고 싶은 것을 써 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [6],
+      tags: ['영어', '단어', '환경'],
+      lines: [
+        'environment 환경 environment',
+        'We must save the environment.',
+        'recycle 재활용하다 recycle',
+        'Recycle paper and cans.',
+        'protect 보호하다 protect',
+        'Protect animals and plants.',
+        'choose 선택하다 choose',
+        'Choose the better way.',
+        'decide 결정하다 decide',
+        'I decide to try again.'
+      ]
+    },
+    {
+      id: 'eng-voc-feeling',
+      category: 'englishVocabulary',
+      title: '영어 단어 — 감정과 상태',
+      sourceType: 'original',
+      learningGoal: '기분을 나타내는 낱말을 쓰며 익힙니다.',
+      reflectionPrompt: '오늘 나의 기분을 영어 단어로 골라 써 보세요.',
+      difficulty: 'easy',
+      recommendedGrade: [6],
+      tags: ['영어', '단어', '감정'],
+      lines: [
+        'happy 행복한 happy',
+        'I am happy today.',
+        'excited 신이 난 excited',
+        'We are excited about the trip.',
+        'worried 걱정하는 worried',
+        'Do not be worried.',
+        'surprised 놀란 surprised',
+        'She looked surprised.',
+        'tired 피곤한 tired',
+        'I feel tired after school.'
+      ]
+    },
+    {
+      id: 'eng-voc-feeling2',
+      category: 'englishVocabulary',
+      title: '영어 단어 — 생각을 나타내는 말',
+      sourceType: 'original',
+      learningGoal: '생각과 판단을 나타내는 낱말을 익힙니다.',
+      reflectionPrompt: '나에게 important 한 것을 영어로 써 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [6],
+      tags: ['영어', '단어', '생각'],
+      lines: [
+        'proud 자랑스러운 proud',
+        'I am proud of my class.',
+        'interested 관심이 있는 interested',
+        'He is interested in science.',
+        'difficult 어려운 difficult',
+        'This question is difficult.',
+        'important 중요한 important',
+        'Health is important.',
+        'different 다른 different',
+        'We all have different ideas.'
+      ]
+    }
+  ]);
+})(typeof globalThis !== 'undefined' ? globalThis : this);

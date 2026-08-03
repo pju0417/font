@@ -17,13 +17,19 @@
   var FID_SIZE = 60;      // 모서리 검은 사각형 한 변
   var FID_MARGIN = 70;    // 종이 가장자리에서 안쪽으로
 
-  var CODE_X = 150, CODE_Y = 200, CODE_SIZE = 28, CODE_STEP = 42, CODE_BITS = 12;
+  var CODE_X = 150, CODE_Y = 202, CODE_SIZE = 24, CODE_STEP = 34, CODE_BITS = 16;
 
   var GRID_TOP = 270, GRID_BOTTOM = 1600, GRID_LEFT = 150, GRID_RIGHT = 1090;
   var GAP = 16;
-  var COLS = 6, ROWS = 8;                 // 기본 시트: 큼직하게 48칸
-  var PASSAGE_COLS = 8, PASSAGE_ROWS = 11; // 필사 시트: 원고지처럼 88칸
+  var COLS = 6, ROWS = 8;                  // 기본 시트: 큼직하게 48칸
   var PER_PAGE = COLS * ROWS;
+
+  /* 활동지(필사) 시트는 원고지 모양 8x10 칸을 쓰고,
+   * 아래쪽을 비워 학생이 생각을 쓰는 자리로 남긴다.
+   * 이 자리는 폰트 글자로 걷지 않는다. */
+  var PASSAGE_COLS = 8, PASSAGE_ROWS = 10;
+  var PASSAGE_GRID_BOTTOM = 1440;
+  var REFLECT_TOP = 1462, REFLECT_BOTTOM = 1604;
 
   /* 한글 칸: 잘라내는 영역이 곧 '음절 사각형'이다. */
   var CELL_INSET = 12;
@@ -60,33 +66,34 @@
     return boxes;
   }
 
-  /* 쪽 번호와 문자셋을 12비트로 인코딩한다.
-   * bit0-5: 쪽 번호(0-63), bit6-7: 문자셋, bit8-11: 앞 8비트 1의 개수 % 16
+  /* 쪽 번호와 문자셋을 16비트로 인코딩한다.
+   * bit0-9: 쪽 번호(0-1023), bit10-11: 문자셋, bit12-15: 앞 12비트 1의 개수 % 16
    * 검사값은 뒤집혀 찍힌 사진이나 잘못 읽은 코드를 걸러낸다. */
   function encodeCode(pageIndex, scope) {
-    var low = (pageIndex & 0x3F) | ((SCOPE_ID[scope] & 0x03) << 6);
-    return low | ((countBits(low) & 0x0F) << 8);
+    var low = (pageIndex & 0x3FF) | ((SCOPE_ID[scope] & 0x03) << 10);
+    return low | ((countBits(low, 12) & 0x0F) << 12);
   }
 
   function decodeCode(value) {
-    var low = value & 0xFF;
-    if (((value >> 8) & 0x0F) !== (countBits(low) & 0x0F)) return null;
-    var scopeId = (low >> 6) & 0x03;
+    var low = value & 0x0FFF;
+    if (((value >> 12) & 0x0F) !== (countBits(low, 12) & 0x0F)) return null;
+    var scopeId = (low >> 10) & 0x03;
     var scope = null;
     for (var k in SCOPE_ID) if (SCOPE_ID[k] === scopeId) scope = k;
     if (!scope) return null;
-    return { pageIndex: low & 0x3F, scope: scope };
+    return { pageIndex: low & 0x3FF, scope: scope };
   }
 
-  function countBits(v) {
+  function countBits(v, bits) {
     var n = 0;
-    for (var i = 0; i < 8; i++) if (v & (1 << i)) n++;
+    for (var i = 0; i < bits; i++) if (v & (1 << i)) n++;
     return n;
   }
 
-  function cellRects(cols, rows) {
+  function cellRects(cols, rows, bottom) {
+    bottom = bottom || GRID_BOTTOM;
     var cw = Math.floor((GRID_RIGHT - GRID_LEFT - GAP * (cols - 1)) / cols);
-    var ch = Math.floor((GRID_BOTTOM - GRID_TOP - GAP * (rows - 1)) / rows);
+    var ch = Math.floor((bottom - GRID_TOP - GAP * (rows - 1)) / rows);
     var rects = [];
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {
@@ -122,7 +129,7 @@
    * 마지막 기본 시트에 통글자가 딸려 나온다. */
   function build(scope) {
     var baseRects = cellRects(COLS, ROWS);
-    var passageRects = cellRects(PASSAGE_COLS, PASSAGE_ROWS);
+    var passageRects = cellRects(PASSAGE_COLS, PASSAGE_ROWS, PASSAGE_GRID_BOTTOM);
     var pages = [];
 
     var base = HF.charset.build(scope);
@@ -146,12 +153,12 @@
       });
     });
 
-    /* 쪽 번호는 종이에 6비트로 인쇄된다. 글을 늘리다 64쪽을 넘기면
-     * 65쪽이 1쪽으로 읽혀 엉뚱한 글자에 붙는데 오류가 나지 않는다.
+    /* 쪽 번호는 종이에 10비트로 인쇄된다. 활동지를 늘리다 1024쪽을 넘기면
+     * 1025쪽이 1쪽으로 읽혀 엉뚱한 글자에 붙는데 오류가 나지 않는다.
      * 그런 일이 조용히 벌어지지 않도록 여기서 막는다. */
-    if (pages.length > 64) {
-      throw new Error('쪽 수가 64를 넘었습니다(' + pages.length + '쪽). ' +
-                      'passages.js 의 글을 줄이거나 쪽 번호 비트를 늘려야 합니다.');
+    if (pages.length > 1024) {
+      throw new Error('쪽 수가 1024를 넘었습니다(' + pages.length + '쪽). ' +
+                      'src/data 의 활동지를 줄이거나 쪽 번호 비트를 늘려야 합니다.');
     }
 
     return {
@@ -161,6 +168,8 @@
       perPage: PER_PAGE, pages: pages,
       // 글자가 없는 칸도 그려야 원고지처럼 보인다
       passageRects: passageRects,
+      // 학생이 생각을 쓰는 자리 (폰트 글자로 걷지 않는다)
+      reflectRect: [GRID_LEFT, REFLECT_TOP, GRID_RIGHT - GRID_LEFT, REFLECT_BOTTOM - REFLECT_TOP],
       basePages: basePages,
       passagePages: pages.length - basePages,
       totalCells: pages.reduce(function (n, pg) { return n + pg.cells.length; }, 0)

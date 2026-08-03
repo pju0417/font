@@ -7,10 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 
-['hangul', 'passages', 'charset', 'layout', 'trace', 'ttf', 'fontbuild'].forEach(function (m) {
-  require(path.join(__dirname, '..', 'src', m + '.js'));
-});
-const HF = globalThis.HF;
+const HF = require('./load')();
 
 function hash(str) {
   let h = 2166136261;

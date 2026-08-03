@@ -3,8 +3,7 @@
  */
 'use strict';
 const path = require('path');
-['hangul', 'passages', 'charset', 'layout'].forEach(m => require(path.join(__dirname, '..', 'src', m + '.js')));
-const HF = globalThis.HF;
+const HF = require('./load')(['charset', 'layout']);
 
 const scope = process.argv[2] || 'full';
 const S = 1.4;                       // imageproc 의 WARP_SCALE 과 같아야 한다

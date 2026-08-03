@@ -74,31 +74,50 @@
   function buildPassageList() {
     var L = state.layouts.full;
     var chosen = JSON.parse(localStorage.getItem('hf.passages') || '[]');
-    var byId = {};
+    var pagesOf = {};
     L.pages.forEach(function (p) {
       if (p.kind !== 'passage') return;
-      var e = byId[p.passage.id] || (byId[p.passage.id] = { p: p.passage, pages: [] });
-      e.pages.push(p.index);
+      (pagesOf[p.passage.id] = pagesOf[p.passage.id] || []).push(p.index);
     });
 
     els.passageList.innerHTML = '';
-    HF.passages.list.forEach(function (ps) {
-      var e = byId[ps.id];
-      if (!e) return;
-      var label = document.createElement('label');
-      label.className = 'passage';
-      label.innerHTML =
-        '<input type="checkbox" value="' + ps.id + '">' +
-        '<span class="t"></span><span class="a"></span>' +
-        '<span class="n"></span><span class="d"></span>';
-      label.querySelector('.t').textContent = ps.title;
-      label.querySelector('.a').textContent = ps.author;
-      label.querySelector('.n').textContent = e.pages.length + '장';
-      label.querySelector('.d').textContent = ps.note || '';
-      var box = label.querySelector('input');
-      box.checked = chosen.indexOf(ps.id) >= 0;
-      box.addEventListener('change', onScopeChange);
-      els.passageList.appendChild(label);
+    HF.passages.CATEGORIES.forEach(function (cat) {
+      var items = HF.passages.byCategory(cat.id).filter(function (ps) {
+        return pagesOf[ps.id];
+      });
+      if (!items.length) return;
+
+      var group = document.createElement('section');
+      group.className = 'passage-group';
+      var h = document.createElement('h3');
+      h.innerHTML = '<span></span><em></em>';
+      h.querySelector('span').textContent = cat.label;
+      h.querySelector('em').textContent = cat.hint;
+      group.appendChild(h);
+
+      var grid = document.createElement('div');
+      grid.className = 'passage-list';
+      items.forEach(function (ps) {
+        var st = HF.passages.SOURCE_TYPES[ps.sourceType];
+        var label = document.createElement('label');
+        label.className = 'passage' +
+          (ps.sourceType === 'textbookReference' ? ' notice' : '');
+        label.innerHTML =
+          '<input type="checkbox" value="' + ps.id + '">' +
+          '<span class="t"></span><span class="a"></span><span class="d"></span>';
+        label.querySelector('.t').textContent = ps.title;
+        label.querySelector('.a').textContent = pagesOf[ps.id].length + '장 · ' + st.short;
+        label.querySelector('.d').textContent =
+          ps.learningGoal || ps.sourceNote || '';
+        label.title = [ps.author, ps.sourceNote, ps.learningGoal]
+          .filter(Boolean).join('\n');
+        var box = label.querySelector('input');
+        box.checked = chosen.indexOf(ps.id) >= 0;
+        box.addEventListener('change', onScopeChange);
+        grid.appendChild(label);
+      });
+      group.appendChild(grid);
+      els.passageList.appendChild(group);
     });
   }
 
@@ -134,7 +153,7 @@
     var cells = idx.reduce(function (n, i) { return n + L.pages[i].cells.length; }, 0);
     var extra = idx.length - L.basePages;
     els.sheetCount.textContent = idx.length + '장 (' + cells + '칸)' +
-      (extra > 0 ? ' · 기본 ' + L.basePages + '장 + 필사 ' + extra + '장' : '');
+      (extra > 0 ? ' · 기본 ' + L.basePages + '장 + 활동지 ' + extra + '장' : '');
     showTemplatePreview();
     updatePageStatus();
   }
@@ -419,7 +438,8 @@
     els.previewBox.style.fontFamily = '"' + state.font.family + '"';
     els.previewBox.style.fontSize = size + 'px';
     els.previewBox.textContent = els.previewText.value ||
-      '다람쥐 헌 쳇바퀴에 타고파\nThe quick brown fox jumps over the lazy dog.\n0123456789';
+      '값 앉다 읽다 흙 닭 젊다 넓다 짧다 괜찮다\n' +
+      'The quick brown fox jumps over the lazy dog.\n0123456789 ?!,."()';
   }
 
   // ---------- 공통 ----------

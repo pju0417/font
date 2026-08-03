@@ -78,6 +78,7 @@
     var pages = [];
 
     HF.passages.list.forEach(function (passage) {
+      var collect = HF.passages.collects(passage);
       var made = [];
       var cells = [], row = 0, col = 0;
 
@@ -97,11 +98,16 @@
           var ch = line.charAt(i);
           var cp = line.charCodeAt(i);
           if (ch !== ' ') {
+            /* 한글 음절만 폰트 글자로 걷는다.
+             * 알파벳·숫자·문장부호는 기본 '영문 시트'에서 베이스라인과 함께
+             * 이미 걷었다. 네모 칸에서 걷으면 글자가 앉을 자리를 알 수 없어
+             * 오히려 폰트를 망친다. 여기서는 종이에 그려만 둔다. */
             var hangul = cp >= 0xAC00 && cp <= 0xD7A3;
+            var take = hangul && collect;
             cells.push({
               // 같은 글자가 여러 번 나오면 키가 같아 더 진한 쪽이 선택된다
-              key: hangul ? 'S:' + hex4(cp) : 'M:' + hex4(cp),
-              kind: hangul ? 'syllable' : 'mark',
+              key: take ? 'S:' + hex4(cp) : 'M:' + hex4(cp),
+              kind: take ? 'syllable' : 'mark',
               unicode: cp, hint: ch, note: '', guide: null,
               slot: row * cols + col
             });
@@ -111,6 +117,9 @@
         newline();
       });
       flush();
+
+      // 빈 원고지 쪽 (교과서를 보고 학생이 직접 옮겨 쓰는 활동)
+      for (var b = 0; b < (passage.blankPages || 0); b++) made.push([]);
 
       made.forEach(function (c, i) {
         pages.push({ passage: passage, part: i + 1, parts: made.length, cells: c });
