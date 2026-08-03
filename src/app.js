@@ -21,7 +21,8 @@
      'photoLog', 'buildBtn', 'progress', 'progressBar', 'progressText', 'result',
      'previewText', 'previewBox', 'previewSize', 'downloadBtn', 'reportBox',
      'pdfBtn', 'pngBtn', 'templatePreview', 'sheetCount', 'resetBtn', 'installHelp',
-     'passageBox', 'passageList', 'extraNote']
+     'passageBox', 'passageList', 'extraNote', 'qualityPanel', 'recommendPanel',
+     'previewPanel', 'previewHint', 'previewMeta', 'previewPages']
       .forEach(function (id) { els[id] = $(id); });
 
     buildPassageList();
@@ -104,7 +105,8 @@
           (ps.sourceType === 'textbookReference' ? ' notice' : '');
         label.innerHTML =
           '<input type="checkbox" value="' + ps.id + '">' +
-          '<span class="t"></span><span class="a"></span><span class="d"></span>';
+          '<span class="t"></span><span class="a"></span><span class="d"></span>' +
+          '<button type="button" class="peek">미리보기</button>';
         label.querySelector('.t').textContent = ps.title;
         label.querySelector('.a').textContent = pagesOf[ps.id].length + '장 · ' + st.short;
         label.querySelector('.d').textContent =
@@ -114,6 +116,12 @@
         var box = label.querySelector('input');
         box.checked = chosen.indexOf(ps.id) >= 0;
         box.addEventListener('change', onScopeChange);
+        // 미리보기 단추는 라벨 안에 있으므로 체크가 따라 눌리지 않게 막는다
+        label.querySelector('.peek').addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          showPassagePreview(ps.id);
+        });
         grid.appendChild(label);
       });
       group.appendChild(grid);
@@ -155,7 +163,99 @@
     els.sheetCount.textContent = idx.length + '장 (' + cells + '칸)' +
       (extra > 0 ? ' · 기본 ' + L.basePages + '장 + 활동지 ' + extra + '장' : '');
     showTemplatePreview();
+    updateQuality();
     updatePageStatus();
+  }
+
+  // ---------- 완성도와 추천 ----------
+
+  /* 활동지가 더해 주는 것은 글자 '개수'가 아니라 '어떤 글자가 손글씨가 되는가' 다.
+   * 기본 시트만으로도 11,172자가 조합으로 다 나오기 때문이다. */
+  function updateQuality() {
+    if (state.scope !== 'full') return;
+    var ids = chosenPassages();
+    var q = HF.quality.evaluate(ids);
+    var g = HF.quality.grade(q.coverage);
+    var pct = Math.round(q.coverage * 100);
+
+    els.qualityPanel.innerHTML =
+      '<h4>완성도</h4>' +
+      '<div class="score-top"><span class="score-num">' + pct + '%</span>' +
+      '<span class="score-tag ' + g.tone + '">' + g.label + '</span></div>' +
+      '<div class="score-bar"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="score-facts">' +
+      fact('손글씨로 쓰는 글자', q.syllables.toLocaleString() + '자') +
+      fact('활동지 분량', q.pages + '장') +
+      fact('초성 · 중성 · 받침', q.cho + ' · ' + q.jung + ' · ' + q.jong + '종') +
+      '</div>' +
+      '<p class="sub" style="margin:9px 0 0">프로그램에 실린 글에 나오는 글자 가운데 ' +
+      '몇 %가 손글씨로 바뀌는지입니다. 나머지는 자모 조합이 채웁니다.</p>';
+
+    renderRecommendations(ids);
+  }
+
+  function fact(k, v) {
+    return '<span>' + k + '</span><b>' + v + '</b>';
+  }
+
+  /* 이미 덮은 글자는 빼고 '새로 늘어나는 몫'이 큰 것부터 권한다.
+   * 장수로 나눠 비교하므로 짧고 알찬 활동지가 먼저 온다. */
+  function renderRecommendations(ids) {
+    var recs = HF.quality.recommend(ids, 3);
+    if (!recs.length) {
+      els.recommendPanel.innerHTML =
+        '<h4>이런 조합은 어떨까요</h4><p class="sub">더 보탤 것이 없습니다. 충분합니다.</p>';
+      return;
+    }
+    var html = '<h4>이런 조합은 어떨까요</h4>';
+    recs.forEach(function (r, i) {
+      html += '<button type="button" class="rec" data-id="' + r.passage.id + '">' +
+        '<span class="t">' + (i === 0 ? '＋ ' : '＋ ') + escapeHtml(r.passage.title) + '</span>' +
+        '<span class="g">' + r.pages + '장 · 새 글자 ' + r.addSyllables + '자 · ' +
+        '<em>완성도 +' + (r.addCoverage * 100).toFixed(1) + '%p</em></span></button>';
+    });
+    els.recommendPanel.innerHTML = html;
+    Array.prototype.forEach.call(els.recommendPanel.querySelectorAll('.rec'), function (b) {
+      b.addEventListener('click', function () {
+        var box = els.passageList.querySelector('input[value="' + b.dataset.id + '"]');
+        if (box) { box.checked = true; onScopeChange(); }
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  // ---------- 활동지 미리보기 ----------
+
+  function showPassagePreview(id) {
+    var L = state.layouts.full;
+    var ps = HF.passages.byId(id);
+    var idx = [];
+    L.pages.forEach(function (p) { if (p.passage && p.passage.id === id) idx.push(p.index); });
+    if (!ps || !idx.length) return;
+
+    els.previewHint.hidden = true;
+    els.previewMeta.hidden = false;
+    var st = HF.passages.SOURCE_TYPES[ps.sourceType];
+    els.previewMeta.innerHTML =
+      '<b>' + escapeHtml(ps.title) + '</b>' +
+      (ps.author ? ' · ' + escapeHtml(ps.author) : '') +
+      ' · ' + st.label + ' · ' + idx.length + '장' +
+      (ps.learningGoal ? '<br>' + escapeHtml(ps.learningGoal) : '') +
+      (ps.sourceNote ? '<br>' + escapeHtml(ps.sourceNote) : '');
+
+    els.previewPages.innerHTML = '';
+    idx.forEach(function (i) {
+      var cv = HF.template.renderPage(L, i, 0.34);
+      cv.title = (i + 1) + '쪽 · 눌러서 크게 보기';
+      cv.addEventListener('click', function () { cv.classList.toggle('big'); });
+      els.previewPages.appendChild(cv);
+    });
+    els.previewPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function currentLayout() {
