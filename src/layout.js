@@ -24,10 +24,17 @@
   var COLS = 6, ROWS = 8;                  // 기본 시트: 큼직하게 48칸
   var PER_PAGE = COLS * ROWS;
 
-  /* 활동지(필사) 시트는 원고지 모양 8x10 칸을 쓰고,
-   * 아래쪽을 비워 학생이 생각을 쓰는 자리로 남긴다.
-   * 이 자리는 폰트 글자로 걷지 않는다. */
-  var PASSAGE_COLS = 8, PASSAGE_ROWS = 10;
+  /* 활동지는 줄마다 쓰기 방식이 다르다.
+   *   ko — 원고지 네모 칸 8개
+   *   en — 영어 노트처럼 가로줄 위에 16글자
+   * 두 방식이 같은 줄 높이를 쓰므로 한 장에 섞여도 줄이 어긋나지 않는다.
+   * 아래쪽은 학생이 생각을 쓰는 자리로 비운다(폰트 글자로 걷지 않는다). */
+  var PASSAGE_ROWS = 10;
+  var PASSAGE_GRID = {
+    rows: PASSAGE_ROWS,
+    ko: { cols: 8, gap: GAP },
+    en: { cols: 16, gap: 4 }
+  };
   var PASSAGE_GRID_BOTTOM = 1440;
   var REFLECT_TOP = 1462, REFLECT_BOTTOM = 1604;
 
@@ -43,6 +50,11 @@
   var LATIN_INSET = 5;
   var LATIN_MARGIN = 5;
   var LATIN_ASCENT_RATIO = 0.75;   // 띠에서 베이스라인 위쪽이 차지하는 비율
+
+  /* 활동지 영어 줄의 글자 크기는 '줄 높이'가 아니라 '칸 너비'가 정한다.
+   * 줄 높이에 맞춰 키우면 m·w·W 처럼 넓은 글자가 칸을 넘어 좌우로 잘린다.
+   * 가장 넓은 글자가 칸 안에 들어가는 크기를 거꾸로 계산한 값이다. */
+  var EN_BAND_PER_WIDTH = 1.05;
 
   var BASELINE_RATIO = 0.72;       // 한글 칸에서만 쓰는 참고값
 
@@ -103,16 +115,52 @@
     return rects;
   }
 
+  /* 활동지 한 줄의 세로 자리 */
+  function passageRowRect(row) {
+    var rh = Math.floor((PASSAGE_GRID_BOTTOM - GRID_TOP - GAP * (PASSAGE_ROWS - 1)) / PASSAGE_ROWS);
+    return [GRID_LEFT, GRID_TOP + row * (rh + GAP), GRID_RIGHT - GRID_LEFT, rh];
+  }
+
+  /* 활동지 한 칸의 자리. 줄 방식(ko/en)에 따라 칸 수와 사이 간격이 다르다. */
+  function passageCellRect(row, col, style) {
+    var g = PASSAGE_GRID[style] || PASSAGE_GRID.ko;
+    var rr = passageRowRect(row);
+    var cw = Math.floor((rr[2] - g.gap * (g.cols - 1)) / g.cols);
+    return [rr[0] + col * (cw + g.gap), rr[1], cw, rr[3]];
+  }
+
+  /* 영어 줄 한 칸의 쓰기 띠. 양식을 그릴 때와 사진에서 잘라낼 때가
+   * 같은 값을 써야 하므로 여기 한 곳에서만 계산한다. */
+  function englishBand(rect) {
+    var wr = [rect[0] + LATIN_INSET, rect[1] + LATIN_INSET,
+              rect[2] - 2 * LATIN_INSET, rect[3] - 2 * LATIN_INSET];
+    var band = Math.min(wr[3] - 2 * LATIN_MARGIN,
+                        Math.round(wr[2] * EN_BAND_PER_WIDTH));
+    var bandTop = wr[1] + Math.round((wr[3] - band) / 2);   // 줄 가운데에 놓는다
+    return {
+      writeRect: wr, band: band, bandTop: bandTop,
+      baselineY: bandTop + Math.round(LATIN_ASCENT_RATIO * band)
+    };
+  }
+
   function place(cell, r) {
-    var isLatin = cell.kind === 'latin';
+    // 영어 줄은 베이스라인이 있어야 하므로 라틴 칸과 같은 방식으로 잡는다
+    var isEn = cell.style === 'en';
+    var isLatin = isEn || (!cell.style && cell.kind === 'latin');
     var inset = isLatin ? LATIN_INSET : CELL_INSET;
     var wr = [r[0] + inset, r[1] + inset, r[2] - 2 * inset, r[3] - 2 * inset];
     var out = {
       key: cell.key, kind: cell.kind, form: cell.form, idx: cell.idx,
       unicode: cell.unicode, hint: cell.hint, note: cell.note, guide: cell.guide,
-      rect: r, writeRect: wr
+      style: cell.style, rect: r, writeRect: wr
     };
-    if (isLatin) {
+    if (isEn) {
+      var b = englishBand(r);
+      out.writeRect = b.writeRect;
+      out.band = b.band;
+      out.bandTop = b.bandTop;
+      out.baselineY = b.baselineY;
+    } else if (isLatin) {
       out.band = wr[3] - 2 * LATIN_MARGIN;          // 윗선~아랫선 높이
       out.bandTop = wr[1] + LATIN_MARGIN;
       out.baselineY = out.bandTop + Math.round(LATIN_ASCENT_RATIO * out.band);
@@ -129,7 +177,6 @@
    * 마지막 기본 시트에 통글자가 딸려 나온다. */
   function build(scope) {
     var baseRects = cellRects(COLS, ROWS);
-    var passageRects = cellRects(PASSAGE_COLS, PASSAGE_ROWS, PASSAGE_GRID_BOTTOM);
     var pages = [];
 
     var base = HF.charset.build(scope);
@@ -144,12 +191,15 @@
 
     // 필사 시트: 글이 원고지처럼 자리를 잡으므로 칸 위치를 charset 이 정해 준다
     var passagePages = scope === 'full'
-      ? HF.charset.buildPassagePages(PASSAGE_COLS, PASSAGE_ROWS) : [];
+      ? HF.charset.buildPassagePages(PASSAGE_GRID) : [];
     passagePages.forEach(function (pg) {
       pages.push({
         index: pages.length, kind: 'passage', code: encodeCode(pages.length, scope),
         passage: pg.passage, part: pg.part, parts: pg.parts,
-        cells: pg.cells.map(function (cell) { return place(cell, passageRects[cell.slot]); })
+        rowStyles: pg.rowStyles,
+        cells: pg.cells.map(function (cell) {
+          return place(cell, passageCellRect(cell.row, cell.col, cell.style));
+        })
       });
     });
 
@@ -166,8 +216,11 @@
       fiducials: fiducials(), fiducialSize: FID_SIZE,
       codeBoxes: codeBoxes(), codeBits: CODE_BITS,
       perPage: PER_PAGE, pages: pages,
-      // 글자가 없는 칸도 그려야 원고지처럼 보인다
-      passageRects: passageRects,
+      // 글자가 없는 칸·줄도 그려야 원고지와 영어 노트처럼 보인다
+      passageGrid: PASSAGE_GRID,
+      passageRowRect: passageRowRect,
+      passageCellRect: passageCellRect,
+      englishBand: englishBand,
       // 학생이 생각을 쓰는 자리 (폰트 글자로 걷지 않는다)
       reflectRect: [GRID_LEFT, REFLECT_TOP, GRID_RIGHT - GRID_LEFT, REFLECT_BOTTOM - REFLECT_TOP],
       basePages: basePages,

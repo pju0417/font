@@ -111,15 +111,7 @@
     ctx.fillStyle = C_TEXT;
 
     // --- 칸 ---
-    if (page.kind === 'passage') {
-      // 빈 칸(띄어쓰기·줄 끝)도 테두리만 그려 원고지처럼 보이게 한다
-      ctx.strokeStyle = C_LINE;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([]);
-      layout.passageRects.forEach(function (r) {
-        ctx.strokeRect(r[0] + 0.5, r[1] + 0.5, r[2] - 1, r[3] - 1);
-      });
-    }
+    if (page.kind === 'passage') drawPassageRows(ctx, layout, page);
     page.cells.forEach(function (cell) {
       drawCell(ctx, cell);
     });
@@ -136,6 +128,14 @@
 
   function drawCell(ctx, cell) {
     var r = cell.rect, wr = cell.writeRect;
+
+    if (cell.style === 'en') {
+      /* 활동지의 영어 줄. 네 선은 줄 단위로 이미 이어 그었으므로
+       * 여기서는 안내 글자만 베이스라인 위에 올린다. 칸 테두리도 치지 않는다. */
+      ctx.fillStyle = C_HINT;
+      fitTextBaseline(ctx, cell.hint, cell);
+      return;
+    }
 
     // 자모 칸: 어느 위치·크기로 써야 하는지 옅은 배경으로 알려 준다
     if (cell.kind === 'mark') {
@@ -244,6 +244,46 @@
     dash(ctx, x0, bl, x1, bl, [9, 4], 2);                                  // 밑선(가장 중요)
     var bot = cell.bandTop + cell.band;
     dash(ctx, x0, bot, x1, bot, [3, 7], 1);                                // 아랫선
+  }
+
+  /* 활동지의 줄 바탕을 그린다.
+   *
+   * 한글 줄은 원고지 네모 칸, 영어 줄은 영어 노트처럼 가로줄을 '이어서' 긋는다.
+   * 칸마다 네모를 치면 영어가 부자연스럽고, 반대로 줄만 그으면 글자 자리를 알 수
+   * 없어 인식이 어긋난다. 이 프로그램은 따라 쓰는 방식이라 인쇄된 안내 글자가
+   * 곧 정렬 기준이 되므로, 줄만 이어 긋고 칸 테두리는 생략한다. */
+  function drawPassageRows(ctx, layout, page) {
+    var styles = page.rowStyles || [];
+    var rows = layout.passageGrid.rows;
+    for (var row = 0; row < rows; row++) {
+      var style = styles[row] || 'ko';
+      var rr = layout.passageRowRect(row);
+      if (style === 'ko') {
+        ctx.strokeStyle = C_LINE;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([]);
+        for (var c = 0; c < layout.passageGrid.ko.cols; c++) {
+          var r = layout.passageCellRect(row, c, 'ko');
+          ctx.strokeRect(r[0] + 0.5, r[1] + 0.5, r[2] - 1, r[3] - 1);
+        }
+      } else {
+        drawEnglishRules(ctx, layout, row, rr);
+      }
+    }
+  }
+
+  /* 영어 줄 네 선. 위치는 칸의 '쓰기 띠'에서 그대로 가져오므로
+   * 인쇄된 안내 글자가 정확히 선 위에 앉는다. */
+  function drawEnglishRules(ctx, layout, row, rr) {
+    var b = layout.englishBand(layout.passageCellRect(row, 0, 'en'));
+    var size = Math.round((b.baselineY - b.bandTop) / latinRatios(ctx).asc);
+    var mean = b.baselineY - latinRatios(ctx).xh * size;
+    var x0 = rr[0], x1 = rr[0] + rr[2];
+
+    dash(ctx, x0, b.bandTop, x1, b.bandTop, [3, 7], 1);
+    dash(ctx, x0, mean, x1, mean, [4, 6], 1);
+    dash(ctx, x0, b.baselineY, x1, b.baselineY, [9, 4], 2);
+    dash(ctx, x0, b.bandTop + b.band, x1, b.bandTop + b.band, [3, 7], 1);
   }
 
   /* 생각을 쓰는 자리.

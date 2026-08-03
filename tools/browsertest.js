@@ -51,7 +51,11 @@
           [wr[0] + (g[0] + g[2] * pad) * wr[2], wr[1] + (g[1] + g[3] * pad) * wr[3],
            g[2] * (1 - 2 * pad) * wr[2], g[3] * (1 - 2 * pad) * wr[3]], cell.kind);
       } else {
-        var size = Math.round(cell.rect[3] * 0.84);
+        /* 라틴 칸. 크기는 양식이 인쇄하는 안내 글자와 같게 잡는다.
+         * (template.js 의 latinHintSize 와 같은 계산) */
+        ctx.font = '600 200px "Malgun Gothic",sans-serif';
+        var ascRatio = ctx.measureText('bdfhklHT').actualBoundingBoxAscent / 200;
+        var size = Math.round((cell.baselineY - cell.bandTop) / ascRatio);
         ctx.font = '600 ' + size + 'px "Malgun Gothic",sans-serif';
         var m = ctx.measureText(cell.hint);
         var w = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;

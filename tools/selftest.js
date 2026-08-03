@@ -74,12 +74,20 @@ function main() {
       const h = Math.round(cell.writeRect[3] * S);
       const mask = strokeMask(w, h, cell.key);
       const bbox = inkBBox(mask, w, h);
-      for (let i = 0; i < mask.length; i++) ink += mask[i];
+      let cellInk = 0;
+      for (let i = 0; i < mask.length; i++) cellInk += mask[i];
+      ink += cellInk;
+      // 앱과 같은 규칙: 같은 글자가 여러 칸에 나오면 진한 쪽을 남긴다
+      // (기본 시트 칸이 활동지 칸보다 커서 보통 기본 시트가 이긴다)
+      const prev = collected[cell.key];
+      if (prev && prev.inkCount >= cellInk) return;
       collected[cell.key] = {
+        inkCount: cellInk,
         key: cell.key, kind: cell.kind, form: cell.form, idx: cell.idx,
         unicode: cell.unicode, hint: cell.hint,
         mask, w, h, bbox, ink: 1, status: 'ok',
-        baselineLocal: (cell.baselineY - cell.writeRect[1]) * S
+        baselineLocal: (cell.baselineY - cell.writeRect[1]) * S,
+        bandHeight: (cell.band || cell.writeRect[3]) * S
       };
     });
   });

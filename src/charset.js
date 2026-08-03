@@ -74,17 +74,35 @@
    * 같은 글자가 여러 번 나와도 그대로 둔다. 글이 글답게 읽혀야 하고,
    * 겹치는 칸은 더 진하게 쓴 쪽이 자동으로 뽑히므로 손해가 아니다.
    * 띄어쓰기는 빈 칸으로 두고, 문장부호는 그려만 두고 글자로는 걷지 않는다. */
-  function buildPassagePages(cols, rows) {
+  function hasHangul(line) {
+    for (var i = 0; i < line.length; i++) {
+      var cp = line.charCodeAt(i);
+      if (cp >= 0xAC00 && cp <= 0xD7A3) return true;
+    }
+    return false;
+  }
+
+  /* 줄마다 쓰기 방식을 정한다.
+   *   ko — 한글이 들어간 줄. 원고지 네모 칸에 한 자씩
+   *   en — 알파벳·숫자만 있는 줄. 영어 노트처럼 가로줄 위에 이어서
+   * 한 줄에 한글과 영어를 섞으면 둘 다 어색해지므로, 자료를 쓸 때
+   * 영어 줄과 뜻풀이 줄을 따로 둔다. */
+  function lineStyle(line) {
+    return hasHangul(line) ? 'ko' : 'en';
+  }
+
+  function buildPassagePages(grid) {
+    var rows = grid.rows;
     var pages = [];
 
     HF.passages.list.forEach(function (passage) {
       var collect = HF.passages.collects(passage);
       var made = [];
-      var cells = [], row = 0, col = 0;
+      var cells = [], styles = [], row = 0, col = 0;
 
       function flush() {
-        if (cells.length) made.push(cells);
-        cells = []; row = 0; col = 0;
+        if (cells.length) made.push({ cells: cells, styles: styles });
+        cells = []; styles = []; row = 0; col = 0;
       }
       function newline() {
         col = 0; row++;
@@ -92,24 +110,40 @@
       }
 
       passage.lines.forEach(function (line) {
+        var style = lineStyle(line);
+        var cols = grid[style].cols;
         for (var i = 0; i < line.length; i++) {
+          /* 영어 줄은 낱말이 잘리지 않게 넘긴다.
+           * 'everyone' 이 'e / veryone' 으로 쪼개지면 읽기도 쓰기도 나쁘다.
+           * 한글은 원고지 관례대로 칸을 채워 넘어간다. */
+          if (style === 'en' && line.charAt(i) !== ' ') {
+            var wordEnd = line.indexOf(' ', i);
+            var wordLen = (wordEnd < 0 ? line.length : wordEnd) - i;
+            var isWordStart = i === 0 || line.charAt(i - 1) === ' ';
+            if (isWordStart && wordLen <= cols && col + wordLen > cols) newline();
+          }
           if (col >= cols) newline();
           if (row >= rows) flush();
+          styles[row] = style;
           var ch = line.charAt(i);
           var cp = line.charCodeAt(i);
           if (ch !== ' ') {
-            /* 한글 음절만 폰트 글자로 걷는다.
-             * 알파벳·숫자·문장부호는 기본 '영문 시트'에서 베이스라인과 함께
-             * 이미 걷었다. 네모 칸에서 걷으면 글자가 앉을 자리를 알 수 없어
-             * 오히려 폰트를 망친다. 여기서는 종이에 그려만 둔다. */
+            /* 한글은 네모 칸이 곧 음절 상자라 그대로 걷는다.
+             * 영어 줄은 베이스라인이 있으므로 알파벳도 걷을 수 있다.
+             * (같은 글자를 기본 영문 시트에서도 걷는데, 그쪽 칸이 훨씬 커서
+             *  잉크가 많아 보통 기본 시트 쪽이 선택된다. 활동지는 기본 시트에서
+             *  빠뜨린 글자를 메워 주는 몫이다.) */
             var hangul = cp >= 0xAC00 && cp <= 0xD7A3;
-            var take = hangul && collect;
+            var kind = !collect ? 'mark'
+                     : hangul ? 'syllable'
+                     : (style === 'en' ? 'latin' : 'mark');
+            var prefix = kind === 'syllable' ? 'S:' : kind === 'latin' ? 'L:' : 'M:';
             cells.push({
               // 같은 글자가 여러 번 나오면 키가 같아 더 진한 쪽이 선택된다
-              key: take ? 'S:' + hex4(cp) : 'M:' + hex4(cp),
-              kind: take ? 'syllable' : 'mark',
+              key: prefix + hex4(cp),
+              kind: kind,
               unicode: cp, hint: ch, note: '', guide: null,
-              slot: row * cols + col
+              style: style, row: row, col: col
             });
           }
           col++;
@@ -119,10 +153,17 @@
       flush();
 
       // 빈 원고지 쪽 (교과서를 보고 학생이 직접 옮겨 쓰는 활동)
-      for (var b = 0; b < (passage.blankPages || 0); b++) made.push([]);
+      for (var b = 0; b < (passage.blankPages || 0); b++) {
+        var blank = [];
+        for (var r = 0; r < rows; r++) blank[r] = 'ko';
+        made.push({ cells: [], styles: blank });
+      }
 
-      made.forEach(function (c, i) {
-        pages.push({ passage: passage, part: i + 1, parts: made.length, cells: c });
+      made.forEach(function (m, i) {
+        pages.push({
+          passage: passage, part: i + 1, parts: made.length,
+          cells: m.cells, rowStyles: m.styles
+        });
       });
     });
 
