@@ -76,7 +76,7 @@
       learningGoal: '0부터 9까지 숫자와 계산 기호를 바르게 씁니다.',
       reflectionPrompt: '내가 가장 예쁘게 쓴 숫자와 다시 연습할 숫자를 써 보세요.',
       difficulty: 'easy',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['수학', '숫자', '기호'],
       lines: [
         '0 1 2 3 4 5 6 7 8 9',
@@ -95,24 +95,24 @@
     {
       id: 'math-proportion',
       category: 'mathematics',
-      title: '수학 — 비례식과 가능성',
+      title: '수학 — 비례식과 비례배분',
       sourceType: 'original',
-      learningGoal: '비례식의 성질과 가능성의 뜻을 문장으로 정리합니다.',
-      reflectionPrompt: '내일 비가 올 가능성을 말로 표현해 보세요.',
+      learningGoal: '비례식의 성질과 비례배분하는 방법을 정리합니다.',
+      reflectionPrompt: '생활에서 비례배분이 필요한 경우를 써 보세요.',
       difficulty: 'normal',
       recommendedGrade: [6],
-      tags: ['수학', '비례식', '가능성'],
+      tags: ['수학', '비례식', '비례배분'],
       lines: [
         '비율이 같은 두 비를 등호로 이은 식을',
         '비례식이라고 합니다',
         '비례식에서 바깥쪽 두 수의 곱과',
         '안쪽 두 수의 곱은 서로 같습니다',
+        '이 성질을 이용하면 모르는 수를',
+        '구할 수 있습니다',
         '비례배분은 전체를 주어진 비에 따라',
         '나누는 것입니다',
-        '가능성은 어떤 일이 일어나리라고',
-        '기대할 수 있는 정도입니다',
-        '가능성은 확실하다 반반이다 불가능하다처럼',
-        '말로 나타내거나 수로 나타낼 수 있습니다'
+        '나눈 결과를 모두 더하면',
+        '처음의 전체가 되는지 확인합니다'
       ]
     }
   ]);

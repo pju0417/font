@@ -11,7 +11,7 @@
       learningGoal: '나에게 하는 다짐을 손으로 쓰며 마음에 새깁니다.',
       reflectionPrompt: '오늘 나에게 가장 필요한 다짐 하나를 골라 다시 써 보세요.',
       difficulty: 'easy',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['다짐', '성장', '자기이해'],
       lines: [
         '나는 어제보다 한 걸음 성장하기 위해',
@@ -34,7 +34,7 @@
       learningGoal: '어려움을 마주하는 태도를 문장으로 다집니다.',
       reflectionPrompt: '요즘 나에게 어려운 일과 그것을 이겨 낼 방법을 써 보세요.',
       difficulty: 'easy',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['다짐', '용기', '도전'],
       lines: [
         '모르는 것을 부끄러워하지 않고',
@@ -57,7 +57,7 @@
       learningGoal: '다른 사람을 대하는 태도를 문장으로 정리합니다.',
       reflectionPrompt: '오늘 친구에게 건네고 싶은 따뜻한 말을 써 보세요.',
       difficulty: 'easy',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['인성', '존중', '배려'],
       lines: [
         '나와 생각이 달라도',
@@ -80,7 +80,7 @@
       learningGoal: '정직하고 책임 있는 행동의 뜻을 새깁니다.',
       reflectionPrompt: '아무도 보지 않아도 지키고 싶은 약속을 써 보세요.',
       difficulty: 'normal',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['인성', '책임', '정직'],
       lines: [
         '내가 한 행동의 결과를',
@@ -103,7 +103,7 @@
       learningGoal: '함께 일할 때 필요한 태도를 정리합니다.',
       reflectionPrompt: '모둠 활동에서 내가 맡고 싶은 역할을 써 보세요.',
       difficulty: 'normal',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['인성', '협력', '소통'],
       lines: [
         '협력은 일을 나누는 것뿐 아니라',

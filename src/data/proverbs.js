@@ -11,7 +11,7 @@
       learningGoal: '꾸준함을 말하는 속담을 옮겨 쓰며 뜻을 새깁니다.',
       reflectionPrompt: '오늘 실천할 속담 하나를 고르고 그 까닭을 써 보세요.',
       difficulty: 'easy',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['속담', '노력', '끈기'],
       lines: [
         '시작이 반이다',
@@ -32,7 +32,7 @@
       learningGoal: '말과 나눔에 관한 속담의 뜻을 생각하며 씁니다.',
       reflectionPrompt: '속담과 비슷한 경험이 있다면 짧게 써 보세요.',
       difficulty: 'easy',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['속담', '배려', '협력'],
       lines: [
         '가는 말이 고와야 오는 말이 곱다',
@@ -51,7 +51,7 @@
       learningGoal: '서두르지 않고 살피는 태도를 담은 속담을 씁니다.',
       reflectionPrompt: '속담에 어울리는 상황을 한 가지 만들어 써 보세요.',
       difficulty: 'normal',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['속담', '신중', '책임'],
       lines: [
         '돌다리도 두드려 보고 건너라',
@@ -70,7 +70,7 @@
       learningGoal: '자신을 돌아보게 하는 속담의 뜻을 새기며 씁니다.',
       reflectionPrompt: '나를 돌아보게 한 속담을 고르고 그 까닭을 써 보세요.',
       difficulty: 'normal',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['속담', '겸손', '성찰'],
       lines: [
         '벼는 익을수록 고개를 숙인다',

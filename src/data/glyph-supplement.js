@@ -84,7 +84,7 @@
       learningGoal: '문장부호의 쓰임을 알고 자리에 맞게 씁니다.',
       reflectionPrompt: '오늘 새로 알게 된 문장부호의 쓰임을 써 보세요.',
       difficulty: 'easy',
-      recommendedGrade: [5, 6],
+      recommendedGrade: [6],
       tags: ['글자보완', '문장부호'],
       lines: [
         '오늘은 참 좋은 날입니다.',

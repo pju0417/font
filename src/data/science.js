@@ -68,50 +68,6 @@
         '햇빛과 바람처럼 다시 채워지는 것에서',
         '재생에너지를 얻습니다'
       ]
-    },
-    {
-      id: 'sci-solution',
-      category: 'science',
-      title: '과학 — 용액과 산성·염기성',
-      sourceType: 'original',
-      learningGoal: '용해와 용액, 산성 용액과 염기성 용액을 정리합니다.',
-      reflectionPrompt: '집에서 찾을 수 있는 산성 용액을 한 가지 써 보세요.',
-      difficulty: 'normal',
-      recommendedGrade: [5, 6],
-      tags: ['과학', '용해', '용액', '산성'],
-      lines: [
-        '어떤 물질이 다른 물질에 골고루 섞여',
-        '녹는 현상을 용해라고 합니다',
-        '물의 온도가 높을수록 녹는 용질의 양이',
-        '많아지는 경우가 있습니다',
-        '지시약의 색깔 변화로 용액을',
-        '산성과 염기성으로 분류할 수 있습니다',
-        '푸른 리트머스 종이를 붉게 바꾸는 것이',
-        '산성 용액입니다',
-        '산성 용액과 염기성 용액을 섞으면',
-        '각각의 성질이 약해집니다'
-      ]
-    },
-    {
-      id: 'sci-body',
-      category: 'science',
-      title: '과학 — 우리 몸과 속력',
-      sourceType: 'original',
-      learningGoal: '우리 몸의 기관과 속력의 뜻을 정리합니다.',
-      reflectionPrompt: '오늘 안전을 위해 지킬 일을 한 가지 써 보세요.',
-      difficulty: 'normal',
-      recommendedGrade: [5, 6],
-      tags: ['과학', '우리몸', '속력', '안전'],
-      lines: [
-        '뼈는 몸을 지탱하고 근육은 뼈를 움직여',
-        '우리 몸이 움직입니다',
-        '소화와 순환과 호흡과 배설 기관은',
-        '서로 관련을 맺으며 일합니다',
-        '속력은 물체가 이동한 거리를',
-        '걸린 시간으로 나누어 구합니다',
-        '속력이 클수록 위험하므로',
-        '교통안전 수칙을 지켜야 합니다'
-      ]
     }
   ]);
 })(typeof globalThis !== 'undefined' ? globalThis : this);
