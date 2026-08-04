@@ -88,6 +88,71 @@
         '환경을 생각하는 소비는 현재와 미래의',
         '삶을 함께 고려하는 행동입니다'
       ]
+    },
+    {
+      id: 'soc-history',
+      category: 'socialStudies',
+      title: '사회 — 우리 역사의 흐름',
+      sourceType: 'original',
+      learningGoal: '유물과 기록으로 옛사람들의 생활을 짐작합니다.',
+      reflectionPrompt: '더 알고 싶은 시대와 그 까닭을 써 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [5, 6],
+      tags: ['사회', '역사', '문화유산'],
+      lines: [
+        '유적과 유물은 글로 남지 않은 시대의',
+        '생활을 짐작하게 해 주는 자료입니다',
+        '고조선은 우리 역사에 기록된',
+        '최초의 국가입니다',
+        '고려는 팔만대장경과 금속 활자를 남겼습니다',
+        '조선 사람들의 생각과 생활에는',
+        '유교 문화가 큰 영향을 주었습니다',
+        '조선 후기에는 상업이 발달하고',
+        '새로운 문물이 들어왔습니다'
+      ]
+    },
+    {
+      id: 'soc-modern',
+      category: 'socialStudies',
+      title: '사회 — 광복과 오늘의 우리',
+      sourceType: 'original',
+      learningGoal: '일제강점기부터 오늘까지의 흐름을 정리합니다.',
+      reflectionPrompt: '평화로운 통일을 위해 내가 할 수 있는 일을 써 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [6],
+      tags: ['사회', '광복', '통일', '민주화'],
+      lines: [
+        '일제의 식민 통치에 맞서 많은 사람이',
+        '나라를 되찾으려고 노력했습니다',
+        '팔일오 광복으로 우리는 나라를 되찾았습니다',
+        '육이오 전쟁은 국토와 삶에',
+        '깊은 상처를 남겼습니다',
+        '분단으로 헤어진 가족과 끊긴 길이',
+        '아직 남아 있습니다',
+        '민주화와 산업화를 거치며',
+        '생활 문화가 크게 달라졌습니다'
+      ]
+    },
+    {
+      id: 'soc-land',
+      category: 'socialStudies',
+      title: '사회 — 우리 국토와 독도',
+      sourceType: 'original',
+      learningGoal: '국토의 지형과 기후, 독도의 중요성을 정리합니다.',
+      reflectionPrompt: '독도를 소개하는 한 문장을 만들어 써 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [5, 6],
+      tags: ['사회', '국토', '독도', '기후'],
+      lines: [
+        '우리나라는 산지와 하천과 해안이',
+        '어우러진 국토를 지녔습니다',
+        '독도는 우리나라의 동쪽 끝에 있는',
+        '섬으로 옛 기록에도 나옵니다',
+        '우리나라는 계절에 따라',
+        '기온과 강수량의 차이가 큽니다',
+        '기후변화로 자연재해가',
+        '잦아지고 심해지고 있습니다'
+      ]
     }
   ]);
 })(typeof globalThis !== 'undefined' ? globalThis : this);

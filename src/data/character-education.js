@@ -140,6 +140,52 @@
         '디지털 공간에 남긴 말과 행동에는',
         '현실과 같은 책임이 따릅니다'
       ]
+    },
+    {
+      id: 'char-justice',
+      category: 'characterEducation',
+      title: '도덕 — 공정함과 봉사',
+      sourceType: 'original',
+      learningGoal: '공정한 규칙과 나눔의 뜻을 문장으로 새깁니다.',
+      reflectionPrompt: '우리 반에 필요한 공정한 규칙을 한 가지 제안해 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [6],
+      tags: ['도덕', '정의', '봉사', '편견'],
+      lines: [
+        '공정한 규칙은 누구에게나',
+        '똑같이 적용되어야 합니다',
+        '규칙을 만들 때에는 가장 불리한 사람의',
+        '처지를 먼저 살펴야 합니다',
+        '봉사는 남는 것을 주는 일이 아니라',
+        '필요한 곳에 마음을 쓰는 일입니다',
+        '편견은 잘 알지 못한 채',
+        '미리 판단할 때 생깁니다',
+        '서로 다름을 존중하는 것이',
+        '함께 살아가는 첫걸음입니다'
+      ]
+    },
+    {
+      id: 'char-peace',
+      category: 'characterEducation',
+      title: '도덕 — 통일과 인류애',
+      sourceType: 'original',
+      learningGoal: '평화로운 통일과 지구촌 이웃에 대한 태도를 새깁니다.',
+      reflectionPrompt: '지구촌 이웃을 위해 내가 할 수 있는 일을 써 보세요.',
+      difficulty: 'normal',
+      recommendedGrade: [6],
+      tags: ['도덕', '통일', '평화', '인류애'],
+      lines: [
+        '분단이 길어질수록 서로를 이해하기',
+        '어려워지므로 만남과 대화가 필요합니다',
+        '통일은 땅을 잇는 일이면서',
+        '마음을 잇는 일이기도 합니다',
+        '다른 나라 사람들이 겪는 어려움도',
+        '우리와 무관하지 않습니다',
+        '멀리 있는 이웃을 돕는 마음이',
+        '인류애입니다',
+        '평화는 다투지 않는 상태가 아니라',
+        '함께 만들어 가는 것입니다'
+      ]
     }
   ]);
 })(typeof globalThis !== 'undefined' ? globalThis : this);
