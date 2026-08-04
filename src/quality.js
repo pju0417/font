@@ -10,12 +10,32 @@
  *   따로 빈도 자료를 두지 않아도 되고, '실제 글에서 만나는 글자의 몇 %가
  *   손글씨가 되는가' 라는 뜻이 분명하다.
  *   (일반 한국어 말뭉치가 아니라 이 프로그램의 글 기준이다.)
+ *
+ * 점수를 어떻게 낼 것인가
+ *   기본 시트만 받아도 폰트는 온전히 만들어진다. 라틴·숫자·기호 94자와 자모
+ *   86자를 본인이 직접 쓰고, 그 자모로 11,172자가 다 나온다. 그런데도 0%로
+ *   보이면 '아직 쓸 수 없는 폰트' 처럼 읽힌다. 그래서 폰트가 하는 일을 셋으로
+ *   나누고, 기본 시트가 이미 끝낸 몫을 점수에 넣는다.
+ *
+ *     라틴·숫자·기호   0.25  기본 시트가 그대로 손글씨 (항상 채워짐)
+ *     한글 자모        0.35  기본 시트가 그대로 손글씨 (항상 채워짐)
+ *     한글 통글자      0.40  활동지로 쓴 만큼 채워짐
+ *
+ *   그래서 기본 시트만이면 60%, 활동지를 다 쓰면 100% 다.
+ *   조합으로 만든 글자도 결국 본인 자모라서 0점이 아니고, 그렇다고 통글자로
+ *   쓴 것과 같지도 않다 — 이어지는 맵시가 다르다. 그 차이가 남은 40% 다.
  */
 (function (root) {
   'use strict';
   var HF = root.HF = root.HF || {};
 
   var cache = null;
+
+  /* 기본 시트가 이미 끝내 놓은 몫. 활동지는 남은 SYL_SHARE 를 채운다. */
+  var LATIN_SHARE = 0.25;
+  var JAMO_SHARE = 0.35;
+  var BASE_SHARE = LATIN_SHARE + JAMO_SHARE;   // 0.60
+  var SYL_SHARE = 1 - BASE_SHARE;              // 0.40
 
   function isSyllable(cp) { return cp >= 0xAC00 && cp <= 0xD7A3; }
 
@@ -78,12 +98,17 @@
       jong[s % 28] = true;
     }
 
+    /* 이 조합으로 덮이는 '글자 쓰임'의 비율.
+     * 흔한 글자를 덮을수록 같은 장수로도 값이 크게 오른다. */
+    var coverage = a.total ? weight / a.total : 0;
+
     return {
       pages: pages,
       syllables: syllables,
-      /* 이 조합으로 덮이는 '글자 쓰임'의 비율.
-       * 흔한 글자를 덮을수록 같은 장수로도 값이 크게 오른다. */
-      coverage: a.total ? weight / a.total : 0,
+      coverage: coverage,
+      /* 화면에 보여 줄 완성도. 기본 시트 몫을 깔고 시작한다(60%). */
+      score: BASE_SHARE + SYL_SHARE * coverage,
+      base: BASE_SHARE,
       cho: Object.keys(cho).length,
       jung: Object.keys(jung).length,
       jong: Object.keys(jong).length
@@ -112,11 +137,12 @@
         gainWeight += a.freq[cp] || 0;
       }
       if (!gainSyl) return;
+      var gain = a.total ? (gainWeight / a.total) * SYL_SHARE : 0;
       out.push({
         passage: ps, pages: e.pages,
         addSyllables: gainSyl,
-        addCoverage: a.total ? gainWeight / a.total : 0,
-        perPage: a.total ? (gainWeight / a.total) / e.pages : 0
+        addScore: gain,          // 화면의 완성도가 오르는 만큼(%p)
+        perPage: gain / e.pages
       });
     });
 
@@ -125,14 +151,18 @@
     return out.slice(0, count || 3);
   }
 
-  /* 눈으로 가늠할 수 있게 다섯 단계로 나눈다 */
-  function grade(coverage) {
-    if (coverage >= 0.85) return { label: '아주 좋음', tone: 'best' };
-    if (coverage >= 0.65) return { label: '좋음', tone: 'good' };
-    if (coverage >= 0.40) return { label: '보통', tone: 'fair' };
-    if (coverage > 0) return { label: '조금', tone: 'low' };
-    return { label: '기본 시트만', tone: 'none' };
+  /* 눈으로 가늠할 수 있게 다섯 단계로 나눈다.
+   * 기본 시트만이어도 폰트는 완성되므로 '모자란다'가 아니라 '여기서 시작'이다. */
+  function grade(score) {
+    if (score >= 0.94) return { label: '아주 좋음', tone: 'best' };
+    if (score >= 0.86) return { label: '좋음', tone: 'good' };
+    if (score >= 0.76) return { label: '보통', tone: 'fair' };
+    if (score > BASE_SHARE) return { label: '기본 + 조금', tone: 'low' };
+    return { label: '기본 시트만으로도 완성', tone: 'none' };
   }
 
-  HF.quality = { analyze: analyze, evaluate: evaluate, recommend: recommend, grade: grade };
+  HF.quality = {
+    analyze: analyze, evaluate: evaluate, recommend: recommend, grade: grade,
+    BASE_SHARE: BASE_SHARE, SYL_SHARE: SYL_SHARE
+  };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

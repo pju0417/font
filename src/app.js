@@ -205,21 +205,25 @@
     if (state.scope !== 'full') return;
     var ids = chosenPassages();
     var q = HF.quality.evaluate(ids);
-    var g = HF.quality.grade(q.coverage);
-    var pct = Math.round(q.coverage * 100);
+    var g = HF.quality.grade(q.score);
+    var pct = Math.round(q.score * 100);
+    var basePct = Math.round(q.base * 100);
 
     els.qualityPanel.innerHTML =
       '<h4>완성도</h4>' +
       '<div class="score-top"><span class="score-num">' + pct + '%</span>' +
       '<span class="score-tag ' + g.tone + '">' + g.label + '</span></div>' +
-      '<div class="score-bar"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="score-bar"><i class="base" style="width:' + basePct + '%"></i>' +
+      '<i style="width:' + (pct - basePct) + '%"></i></div>' +
       '<div class="score-facts">' +
-      fact('손글씨로 쓰는 글자', q.syllables.toLocaleString() + '자') +
+      fact('기본 시트 (라틴 · 자모)', basePct + '%') +
+      fact('통글자로 쓴 글자', q.syllables.toLocaleString() + '자') +
       fact('활동지 분량', q.pages + '장') +
       fact('초성 · 중성 · 받침', q.cho + ' · ' + q.jung + ' · ' + q.jong + '종') +
       '</div>' +
-      '<p class="sub" style="margin:9px 0 0">프로그램에 실린 글에 나오는 글자 가운데 ' +
-      '몇 %가 손글씨로 바뀌는지입니다. 나머지는 자모 조합이 채웁니다.</p>';
+      '<p class="sub" style="margin:9px 0 0">기본 시트만 써도 폰트는 완성됩니다(' + basePct + '%). ' +
+      '한글 11,172자가 직접 쓴 자모의 조합으로 모두 나오기 때문입니다. ' +
+      '활동지는 자주 쓰는 글자를 통째로 쓴 손글씨로 바꿔 나머지를 채웁니다.</p>';
 
     renderRecommendations(ids);
   }
@@ -242,7 +246,7 @@
       html += '<button type="button" class="rec" data-id="' + r.passage.id + '">' +
         '<span class="t">' + (i === 0 ? '＋ ' : '＋ ') + escapeHtml(r.passage.title) + '</span>' +
         '<span class="g">' + r.pages + '장 · 새 글자 ' + r.addSyllables + '자 · ' +
-        '<em>완성도 +' + (r.addCoverage * 100).toFixed(1) + '%p</em></span></button>';
+        '<em>완성도 +' + (r.addScore * 100).toFixed(1) + '%p</em></span></button>';
     });
     els.recommendPanel.innerHTML = html;
     Array.prototype.forEach.call(els.recommendPanel.querySelectorAll('.rec'), function (b) {

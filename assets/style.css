@@ -164,8 +164,10 @@ button:disabled { opacity: .5; cursor: default; }
 .score-tag.fair { background: #fdf4e3; color: #8a6a12; }
 .score-tag.low  { background: #fdeee9; color: #b4512f; }
 .score-tag.none { background: #eef1f5; color: var(--muted); }
-.score-bar { height: 9px; border-radius: 999px; background: #e8ecf1; overflow: hidden; margin-bottom: 10px; }
-.score-bar > i { display: block; height: 100%; background: var(--brand); transition: width .25s; }
+.score-bar { display: flex; height: 9px; border-radius: 999px; background: #e8ecf1; overflow: hidden; margin-bottom: 10px; }
+/* 앞칸은 기본 시트가 이미 채운 몫, 뒤칸은 활동지가 더한 몫 */
+.score-bar > i { height: 100%; background: var(--brand); transition: width .25s; }
+.score-bar > i.base { background: color-mix(in srgb, var(--brand) 42%, #e8ecf1); }
 .score-facts { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; font-size: 13.5px; }
 .score-facts b { font-weight: 600; }
 .score-facts span { color: var(--muted); }
@@ -298,6 +300,7 @@ footer { padding: 26px 20px 50px; color: var(--muted); font-size: 14px; text-ali
   .steps button[aria-current="true"] b { color: #0d1117; }
   .steps button.done b { color: #0d1117; }
   .score-bar { background: #2c333d; }
+  .score-bar > i.base { background: color-mix(in srgb, var(--brand) 45%, #2c333d); }
   .score-tag.best { background: #13291f; color: #6cd6a5; }
   .score-tag.good { background: #172236; color: #7aa7ff; }
   .score-tag.fair { background: #2a2418; color: #e3bd5e; }
