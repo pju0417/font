@@ -205,16 +205,27 @@
     if (state.scope !== 'full') return;
     var ids = chosenPassages();
     var q = HF.quality.evaluate(ids);
-    var g = HF.quality.grade(q.score);
     var pct = Math.round(q.score * 100);
     var basePct = Math.round(q.base * 100);
+    /* 등급과 눈금 안내는 화면에 찍힌 값으로 판단한다.
+     * 그러지 않으면 93%라고 써 놓고 '권장선(93%)까지 남았다'고 하게 된다. */
+    var shown = pct / 100;
+    var g = HF.quality.grade(shown);
 
     els.qualityPanel.innerHTML =
       '<h4>완성도</h4>' +
       '<div class="score-top"><span class="score-num">' + pct + '%</span>' +
       '<span class="score-tag ' + g.tone + '">' + g.label + '</span></div>' +
       '<div class="score-bar"><i class="base" style="width:' + basePct + '%"></i>' +
-      '<i style="width:' + (pct - basePct) + '%"></i></div>' +
+      '<i style="width:' + (pct - basePct) + '%"></i>' + targetTicks(shown) + '</div>' +
+      '<div class="score-marks">' +
+      /* 두 눈금이 6%p 밖에 안 떨어져 글자가 겹친다. 앞은 눈금 왼쪽에,
+       * 뒤는 눈금 오른쪽에 붙여 서로 비켜 가게 한다. */
+      HF.quality.TARGETS.map(function (t, i) {
+        return '<span class="' + (i === 0 ? 'lt' : 'rt') +
+          '" style="left:' + (t.score * 100) + '%">' + t.label + '</span>';
+      }).join('') + '</div>' +
+      targetHint(ids, shown) +
       '<div class="score-facts">' +
       fact('기본 시트 (라틴 · 자모)', basePct + '%') +
       fact('통글자로 쓴 글자', q.syllables.toLocaleString() + '자') +
@@ -230,6 +241,30 @@
 
   function fact(k, v) {
     return '<span>' + k + '</span><b>' + v + '</b>';
+  }
+
+  /* 완성도 막대 위의 눈금 두 개 */
+  function targetTicks(score) {
+    return HF.quality.TARGETS.map(function (t) {
+      return '<u class="tick' + (score >= t.score ? ' met' : '') +
+        '" style="left:' + (t.score * 100) + '%"></u>';
+    }).join('');
+  }
+
+  /* 다음 눈금까지 얼마나 남았는지. 넘겼으면 넘겼다고만 알린다. */
+  function targetHint(ids, score) {
+    var T = HF.quality.TARGETS;
+    var next = null;
+    for (var i = 0; i < T.length; i++) if (score < T[i].score) { next = T[i]; break; }
+
+    if (!next) {
+      return '<p class="target-hint met">권장선을 넘었습니다. 여기서 더 늘려도 폰트는 크게 달라지지 않습니다.</p>';
+    }
+    var need = HF.quality.toTarget(ids, next.score);
+    if (need.exhausted) return '';
+    return '<p class="target-hint"><b>' + next.label + '선</b>(' +
+      Math.round(next.score * 100) + '%)까지 활동지 ' + need.passages + '종 · ' +
+      need.pages + '장 남았습니다<br><span>' + next.note + '</span></p>';
   }
 
   /* 이미 덮은 글자는 빼고 '새로 늘어나는 몫'이 큰 것부터 권한다.

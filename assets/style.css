@@ -164,10 +164,33 @@ button:disabled { opacity: .5; cursor: default; }
 .score-tag.fair { background: #fdf4e3; color: #8a6a12; }
 .score-tag.low  { background: #fdeee9; color: #b4512f; }
 .score-tag.none { background: #eef1f5; color: var(--muted); }
-.score-bar { display: flex; height: 9px; border-radius: 999px; background: #e8ecf1; overflow: hidden; margin-bottom: 10px; }
+.score-bar {
+  position: relative; display: flex; height: 9px; border-radius: 999px;
+  background: #e8ecf1; overflow: hidden;
+}
 /* 앞칸은 기본 시트가 이미 채운 몫, 뒤칸은 활동지가 더한 몫 */
 .score-bar > i { height: 100%; background: var(--brand); transition: width .25s; }
 .score-bar > i.base { background: color-mix(in srgb, var(--brand) 42%, #e8ecf1); }
+/* 최소선 · 권장선 눈금 */
+.score-bar > u {
+  position: absolute; top: 0; width: 2px; height: 100%;
+  background: #fff; opacity: .85;
+}
+.score-bar > u.met { background: rgba(255, 255, 255, .55); }
+.score-marks {
+  position: relative; height: 15px; margin-bottom: 8px;
+  font-size: 11px; color: var(--muted);
+}
+.score-marks span { position: absolute; top: 1px; white-space: nowrap; }
+.score-marks span.lt { transform: translateX(-100%); padding-right: 4px; }
+.score-marks span.rt { padding-left: 4px; }
+.target-hint {
+  margin: 0 0 10px; padding: 7px 10px; border-radius: 8px;
+  background: #f2f6fb; font-size: 13px; line-height: 1.45;
+}
+.target-hint b { font-weight: 600; }
+.target-hint span { color: var(--muted); font-size: 12.5px; }
+.target-hint.met { background: #eef7f1; color: var(--good); }
 .score-facts { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; font-size: 13.5px; }
 .score-facts b { font-weight: 600; }
 .score-facts span { color: var(--muted); }
@@ -301,6 +324,10 @@ footer { padding: 26px 20px 50px; color: var(--muted); font-size: 14px; text-ali
   .steps button.done b { color: #0d1117; }
   .score-bar { background: #2c333d; }
   .score-bar > i.base { background: color-mix(in srgb, var(--brand) 45%, #2c333d); }
+  .score-bar > u { background: #0d1117; opacity: .7; }
+  .score-bar > u.met { background: rgba(13, 17, 23, .5); }
+  .target-hint { background: #172236; }
+  .target-hint.met { background: #13291f; }
   .score-tag.best { background: #13291f; color: #6cd6a5; }
   .score-tag.good { background: #172236; color: #7aa7ff; }
   .score-tag.fair { background: #2a2418; color: #e3bd5e; }

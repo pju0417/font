@@ -151,6 +151,38 @@
     return out.slice(0, count || 3);
   }
 
+  /* 어디까지 쓰면 될까 — 두 눈금.
+   *
+   * 곡선이 5장(87%)에서 꺾인다. 그 뒤로는 한 장 더 써도 1%p 남짓이고,
+   * 100% 를 채우려면 136장을 써야 한다. 마지막 3%p 에 88장이 든다.
+   *
+   * 화면 점수는 프로그램에 실린 글로 잰 값이라 후하다. 고르지 않은 활동지의
+   * 글(= 처음 보는 문장)로 따로 재 보면 87% 는 통글자 66%, 93% 는 80% 였다.
+   * 권장선을 93% 에 둔 까닭이다 — 처음 보는 글에서도 열에 여덟이 통글자다. */
+  var TARGETS = [
+    { score: 0.87, key: 'min', label: '최소', note: '처음 보는 글에서 통글자 약 3분의 2' },
+    { score: 0.93, key: 'rec', label: '권장', note: '처음 보는 글에서도 통글자 약 80%' }
+  ];
+
+  /* 목표까지 가려면 몇 종·몇 장을 더 써야 하는지 (추천과 같은 순서로 채워 본다) */
+  function toTarget(ids, target) {
+    // 화면에 찍히는 값(반올림)으로 따져야 안내 문구와 숫자가 어긋나지 않는다
+    function hit(list) { return Math.round(evaluate(list).score * 100) >= Math.round(target * 100); }
+
+    var cur = ids.slice();
+    if (hit(cur)) return { reached: true, passages: 0, pages: 0 };
+
+    var pages = 0, n = 0;
+    for (var guard = 0; guard < 200; guard++) {
+      var r = recommend(cur, 1)[0];
+      if (!r) break;
+      cur.push(r.passage.id);
+      pages += r.pages; n++;
+      if (hit(cur)) return { reached: false, passages: n, pages: pages };
+    }
+    return { reached: false, passages: n, pages: pages, exhausted: true };
+  }
+
   /* 눈으로 가늠할 수 있게 다섯 단계로 나눈다.
    * 기본 시트만이어도 폰트는 완성되므로 '모자란다'가 아니라 '여기서 시작'이다. */
   function grade(score) {
@@ -163,6 +195,7 @@
 
   HF.quality = {
     analyze: analyze, evaluate: evaluate, recommend: recommend, grade: grade,
+    toTarget: toTarget, TARGETS: TARGETS,
     BASE_SHARE: BASE_SHARE, SYL_SHARE: SYL_SHARE
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
